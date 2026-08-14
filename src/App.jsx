@@ -245,7 +245,7 @@ function Home({ onNavigate }) {
     {/* ═══ HERO + IMAGE + INTERACTIVE (one continuous stitched section) ═══ */}
     <section style={stitchBg}>
       {/* hero text */}
-      <div style={{ padding: "clamp(32px,5vw,56px) clamp(24px,6vw,56px) clamp(16px,2vw,24px)" }}>
+      <div style={{ padding: "clamp(32px,5vw,56px) clamp(24px,6vw,56px) calc(clamp(16px,2vw,24px) + 20px)" }}>
         <div style={wrap(WIDE)}>
           <F>
             <h1 style={{ fontSize: "clamp(28px,4.2vw,44px)", fontWeight: 600, lineHeight: 1.08, letterSpacing: "-.04em", marginBottom: 8 }}>Make your product self-improving</h1>

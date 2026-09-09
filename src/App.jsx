@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import heroImg from "./paperplane-assets/hero.png";
 import ctaImg from "./paperplane-assets/cta.png";
 import textureBlue from "./paperplane-assets/texture-blue.png";
@@ -17,16 +17,15 @@ const C = {
   denim: "#3D6A8E", denimDeep: "#2A5070", denimSoft: "#E8EFF5", denimLine: "#B8CEDC",
   gold: "#C59530", goldSoft: "#FBF3E2", goldLine: "#EDD9A8",
   terra: "#B95738", terraSoft: "#FBF0EA", terraLine: "#E8C5B4",
-  oat: "#D8C9A4",
+  oat: "#D8C9A4", green: "#587560",
 };
 
 const R = 16;
 const shadow = `0 1px 3px ${C.ink}0A, 0 12px 40px -16px ${C.ink}1A`;
 const WIDE = 1020;
-const NARROW = 760;
 const IMG_W = 1100;
-const wrap = (w = WIDE) => ({ maxWidth: w, margin: "0 auto", position: "relative", zIndex: 1 });
-const pad = "clamp(60px,8.5vw,100px) clamp(24px,6vw,56px)";
+const wrap = (w = WIDE) => ({ width: `min(${w}px, calc(100% - 48px))`, margin: "0 auto", position: "relative", zIndex: 1 });
+const pad = "clamp(60px,8.5vw,100px) 0";
 const stitchBg = { background: C.page, backgroundImage: `repeating-linear-gradient(180deg,rgba(20,26,23,.022) 0px,rgba(20,26,23,.022) 1px,transparent 1px,transparent 4px)` };
 const tag = (c, bg, ln) => ({ fontFamily: MONO, fontSize: 10, letterSpacing: ".05em", padding: "3px 8px", color: c, background: bg, border: `1px solid ${ln}`, whiteSpace: "nowrap", borderRadius: 4 });
 const eyebrow = { fontFamily: MONO, fontSize: 11, letterSpacing: ".09em", textTransform: "uppercase", color: C.faint, marginBottom: 18 };
@@ -34,6 +33,7 @@ const h2s = { fontSize: "clamp(24px,3.4vw,34px)", fontWeight: 600, lineHeight: 1
 const ps = { fontSize: "clamp(15px,1.7vw,16.5px)", lineHeight: 1.74, color: C.body };
 const btnLaunch = { background: `url(${I.blue}) center/cover`, backgroundColor: C.denimDeep, color: "#fff", border: "none", borderRadius: 6, padding: "11px 28px", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: INTER, backgroundBlendMode: "overlay", boxShadow: `inset 0 0 0 100px ${C.denimDeep}B8` };
 const btnText = { background: "none", border: "none", color: C.body, fontSize: 14, fontWeight: 400, cursor: "pointer", fontFamily: INTER, textDecoration: "underline", textUnderlineOffset: 3 };
+const pill = (c, bg) => ({ fontFamily: MONO, fontSize: 8, fontWeight: 600, letterSpacing: ".03em", padding: "3px 7px", borderRadius: 999, color: c, background: bg, display: "inline-flex", width: "max-content" });
 
 function Logo({ size = 22, color = "#111" }) {
   return (<svg width={size} height={size} viewBox="0 0 32 28" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3L5 19L10 23L16 20.5L22 23L27 19Z" /><path d="M16 3L16 20.5" /></svg>);
@@ -47,14 +47,14 @@ function F({ children, delay = 0, style = {} }) {
 
 function DottedRule() {
   const d = []; for (let i = 0; i < 90; i++) d.push(<rect key={i} x={i * 14} y="2" width="8" height="2" rx="1" fill={C.oat} />);
-  return (<div style={{ padding: "0 clamp(24px,6vw,56px)" }}><div style={{ maxWidth: WIDE, margin: "0 auto" }}><svg viewBox="0 0 1260 6" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: 6 }}>{d}</svg></div></div>);
+  return (<div style={wrap(WIDE)}><svg viewBox="0 0 1260 6" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: 6 }}>{d}</svg></div>);
 }
 
 function SectionLine() { return <div style={{ borderTop: `1px solid ${C.border}` }} />; }
 
 const NAV_ITEMS = [
-  { label: "Products", sections: [[null, ["paperplane Web", "paperplane Slack", "paperplane MCP", "paperplane CLI", "Context Warehouse"]]] },
-  { label: "Docs", sections: [["Dev", ["SDK", "Documentation", "Integrations", "Changelog"]], ["Resources", ["Guides", "Case Studies", "Research", "Blog"]]] },
+  { label: "Products", sections: [[null, ["paperplane Web", "paperplane Slack", "paperplane CLI", "paperplane MCP"]]] },
+  { label: "Docs", sections: [["Dev", ["SDK", "MCP", "Documentation", "Integrations"]], ["Resources", ["Guides", "Case Studies", "Blog"]]] },
   { label: "Enterprise", sections: [["Security", ["SOC 2", "Data Handling", "SSO / SAML"]], ["Support", ["Dedicated Slack", "SLAs", "Onboarding"]]] },
   { label: "Pricing", link: true },
   { label: "Company", sections: [[null, ["About", "Careers", "Contact"]]] },
@@ -102,111 +102,282 @@ function Footer({ onNavigate }) {
   </footer>);
 }
 
-/* ── interactive surface, height driven by the assign tab (not hard-locked) ── */
-function Surface() {
-  const [tab, setTab] = useState("ask");
-  const [paused, setPaused] = useState(false);
-  const [paneH, setPaneH] = useState(null);
-  const tabs = ["ask", "assign", "deploy"];
-  const resumeRef = useRef(null);
-  const measureRef = useRef(null);
-  useEffect(() => { if (paused) return; const id = setInterval(() => { setTab(prev => tabs[(tabs.indexOf(prev) + 1) % tabs.length]); }, 7000); return () => clearInterval(id); }, [paused]);
-  const click = (t) => { setTab(t); setPaused(true); if (resumeRef.current) clearTimeout(resumeRef.current); resumeRef.current = setTimeout(() => setPaused(false), 15000); };
-  // pane height always tracks the assign tab's natural content height (tallest pane), re-measured on any resize/reflow
-  useLayoutEffect(() => {
-    if (!measureRef.current) return;
-    const el = measureRef.current;
-    const update = () => setPaneH(el.offsetHeight);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const Av = ({ letter = "A", agent }) => (<div style={{ width: 24, height: 24, borderRadius: 6, flexShrink: 0, background: agent ? C.denimSoft : C.soft, border: `1px solid ${agent ? C.denimLine : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MONO, fontSize: 10, fontWeight: 600, color: agent ? C.denim : C.faint }}>{agent ? <Logo size={12} color={C.denim} /> : letter}</div>);
-
-  const panes = {
-    ask: (<div style={{ padding: 22, height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ display: "flex", gap: 10 }}><Av /><div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, paddingTop: 2 }}>Why did signups drop 12% last week?</div></div>
-        <div style={{ display: "flex", gap: 10 }}><Av agent /><div style={{ fontSize: 14, color: C.body, lineHeight: 1.7, paddingTop: 2 }}>
-          <span style={{ color: C.ink, fontWeight: 500 }}>Safari users can't finish step 3.</span>
-          <div className="ask-trace">
-            <div className="ask-trace-item" style={{ fontSize: 13.5, lineHeight: 1.55, color: C.body }}>A validation change shipped Tuesday broke autofill on the email field.</div>
-            <div className="ask-trace-item" style={{ fontSize: 13.5, lineHeight: 1.55, color: C.body }}>847 sessions hit it, 61% abandoned.</div>
-            <div className="ask-trace-item ask-trace-last" style={{ fontSize: 13.5, lineHeight: 1.55, color: C.body }}>The funnel shows the drop starts at the email input specifically.</div>
-          </div>
-          <div style={{ marginTop: 12, display: "flex", gap: 7, flexWrap: "wrap" }}>{["847 sessions", "Safari 17.x", "43% funnel drop", "since Oct 14"].map(t => (<span key={t} style={tag(C.body, C.soft, C.border)}>{t}</span>))}</div>
-        </div></div>
-      </div>
-      <div style={{ marginTop: "auto", paddingTop: 16 }}>
-        <div style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.soft, fontSize: 13.5, color: C.faint }}>Ask about your product...</div>
-      </div>
-    </div>),
-    assign: (<div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", gap: 10 }}><Av /><div style={{ fontSize: 14, color: C.ink, lineHeight: 1.6, paddingTop: 2 }}><span style={{ color: C.denim, fontWeight: 500 }}>@paperplane</span> a customer says CSV export does nothing. Can you look into it?</div></div>
-      <div style={{ display: "flex", gap: 10 }}><Av agent /><div style={{ fontSize: 14, color: C.body, lineHeight: 1.7, paddingTop: 2, width: "100%" }}>
-        Found it. Export fails silently when a filter returns over 10k rows. Reproduced across 47 sessions. Error logs confirm a timeout on the unbatched query.
-        <div style={{ marginTop: 10, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
-          {[["Root cause", "Timeout on unbatched query"], ["Sessions", "47 in 7 days"], ["Error rate", "100% above 10k rows"], ["Fix", "Chunk into 5k batches"]].map(([k, v], i) => (
-            <div key={k} style={{ display: "flex", padding: "8px 12px", fontFamily: MONO, fontSize: 11.5, borderBottom: i < 3 ? `1px solid ${C.soft}` : "none" }}>
-              <span style={{ color: C.faint, width: 90, flexShrink: 0 }}>{k}</span><span style={{ color: C.ink }}>{v}</span>
-            </div>))}
+/* ── hero dashboard mockup ── */
+function HeroDashboard() {
+  const sideItems = ["Overview", "Signals", "Journeys", "Users", "Reports"];
+  return (
+    <div style={{ width: "100%", maxWidth: 920, background: C.paper, border: `1px solid ${C.border}`, borderRadius: R, overflow: "hidden", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
+      <div style={{ height: 49, display: "flex", alignItems: "center", padding: "0 17px", borderBottom: `1px solid ${C.soft}`, background: "#fafaf7" }}>
+        <div style={{ display: "flex", gap: 6, width: 90 }}>
+          {["#f49378", "#d5d5ce", "#d5d5ce"].map((bg, i) => <span key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: bg }} />)}
         </div>
-        <div style={{ marginTop: 10, fontSize: 13.5, color: C.denim, fontWeight: 500 }}>Pull request ready for review</div>
-      </div></div>
-    </div>),
-    deploy: (<div style={{ padding: 16, display: "flex", flexDirection: "column" }}>
-      {[
-        { t: "Batch CSV exports over 10k rows", m: "47 users · fixes silent failure", s: "REVIEW PR" },
-        { t: "Restore Safari autofill on step 3", m: "847 sessions · +9% completion", s: "REVIEW PR" },
-        { t: "Preload pricing table on plan switch", m: "1.2k sessions · 1.4s faster", s: "REVIEW PR" },
-        { t: "Add retry logic to webhook delivery", m: "23 accounts · 3 error spikes", s: "DEPLOYED" },
-      ].map((r, i) => (
-        <div key={i} style={{ padding: "13px 12px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", borderBottom: i < 3 ? `1px solid ${C.soft}` : "none" }}>
-          <div style={{ flex: 1, minWidth: 180 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 500, color: C.ink, marginBottom: 4 }}>{r.t}</div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: C.faint }}>{r.m}</div>
-          </div>
-          <span style={r.s === "DEPLOYED" ? tag(C.faint, C.paper, C.border) : tag(C.denim, C.denimSoft, C.denimLine)}>{r.s}</span>
+        <div style={{ margin: "0 auto", width: 260, height: 24, padding: "5px 14px", border: `1px solid ${C.border}`, borderRadius: 7, fontSize: 10, color: "#777", background: "#fff", fontFamily: MONO, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 7 }}>
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ opacity: .5, flexShrink: 0 }}><circle cx="7" cy="7" r="5.5" stroke="#777" strokeWidth="1.4" /><line x1="11.2" y1="11.2" x2="15" y2="15" stroke="#777" strokeWidth="1.4" strokeLinecap="round" /></svg>
+          <span style={{ opacity: .6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Ask anything about your product...</span>
         </div>
-      ))}
-    </div>),
-  };
-
-  return (<div style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: R, overflow: "hidden", boxShadow: shadow }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "9px 16px", borderBottom: `1px solid ${C.soft}`, background: C.page }}>
-      {tabs.map(t => (<button key={t} onClick={() => click(t)} style={{ fontFamily: INTER, fontSize: 13, fontWeight: 500, cursor: "pointer", padding: "6px 13px", borderRadius: 8, textTransform: "capitalize", border: `1px solid ${tab === t ? C.border : "transparent"}`, background: tab === t ? C.paper : "transparent", color: tab === t ? C.ink : C.faint, transition: "all .18s" }}>{t}</button>))}
-      <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10.5, color: C.faint, paddingRight: 6 }}>paperplane</span>
+        <div style={{ width: 90, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, fontSize: 10, color: C.green, fontFamily: MONO }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#42b789" }} />Live
+        </div>
+      </div>
+      <div className="product-body" style={{ minHeight: 520, display: "grid", gridTemplateColumns: "130px 1fr" }}>
+        <aside className="sidebar" style={{ borderRight: `1px solid ${C.border}`, background: "#f8f8f5", padding: "17px 11px", display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ width: 27, height: 27, margin: "0 8px 15px", display: "grid", placeItems: "center", background: C.denim, color: "white", borderRadius: 7, fontSize: 11, fontWeight: 700, fontFamily: MONO }}>P</div>
+          {sideItems.map(item => (
+            <div key={item} style={{ display: "flex", alignItems: "center", gap: 9, height: 32, padding: "0 9px", borderRadius: 7, color: item === "Overview" ? C.ink : "#777", fontSize: 11, ...(item === "Overview" ? { background: "#fff", boxShadow: `0 2px 8px ${C.ink}0D` } : {}) }}>
+              <span style={{ width: 10, height: 10, border: `1.5px solid ${item === "Overview" ? C.denim : "#a9aaa4"}`, borderRadius: 3, ...(item === "Overview" ? { background: C.denimSoft } : {}) }} />
+              <span>{item}</span>
+            </div>
+          ))}
+          <div style={{ flex: 1 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 9, height: 32, padding: "0 9px", borderRadius: 7, color: "#777", fontSize: 11 }}>
+            <span style={{ width: 10, height: 10, border: "1.5px solid #a9aaa4", borderRadius: 3 }} /><span>Settings</span>
+          </div>
+        </aside>
+        <div className="dashboard-main" style={{ padding: "24px 28px", background: "#fdfdfb" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18 }}>
+            <div>
+              <span style={{ display: "block", marginBottom: 5, color: C.faint, letterSpacing: ".12em", fontSize: 9, fontWeight: 600, fontFamily: MONO }}>THIS WEEK</span>
+              <h3 style={{ fontSize: 18, letterSpacing: "-.03em", fontWeight: 600 }}>Your product is getting better</h3>
+            </div>
+            <div style={{ display: "flex" }}>
+              {["A", "N", "+3"].map((a, i) => (
+                <span key={i} style={{ width: 24, height: 24, marginLeft: i ? -5 : 0, display: "grid", placeItems: "center", border: "2px solid white", borderRadius: "50%", background: i === 0 ? "#ffd0c2" : i === 1 ? C.denimSoft : "#deded7", fontSize: 8, fontWeight: 700, fontFamily: MONO }}>{a}</span>
+              ))}
+            </div>
+          </div>
+          <div className="summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
+            {[{ l: "Signals found", v: "24", s: "6 with PRs ready" }, { l: "Fixes shipped", v: "5", s: "All verified post-deploy" }, { l: "Impact", v: "+11%", s: "Activation this month", a: true }].map((m, i) => (
+              <div key={i} style={{ padding: "14px 15px", border: `1px solid ${m.a ? C.terraLine : C.border}`, borderRadius: 10, background: m.a ? C.terraSoft : "white" }}>
+                <span style={{ display: "block", color: C.faint, fontSize: 9, fontFamily: MONO }}>{m.l}</span>
+                <strong style={{ display: "block", margin: "6px 0 3px", fontSize: 20, letterSpacing: "-.03em", ...(m.a ? { color: C.terra } : {}) }}>{m.v}</strong>
+                <small style={{ display: "block", color: "#aaa", fontSize: 9 }}>{m.s}</small>
+              </div>
+            ))}
+          </div>
+          <div style={{ border: `1px solid ${C.border}`, background: "#fff", borderRadius: 12, overflow: "hidden" }}>
+            <div className="featured-insight" style={{ display: "grid", gridTemplateColumns: "32px 1fr 190px", gap: 14, padding: 18 }}>
+              <div style={{ width: 28, height: 28, display: "grid", placeItems: "center", background: C.ink, color: "#fff", borderRadius: 7, fontSize: 10, fontFamily: MONO }}>01</div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.faint, fontSize: 9 }}>
+                  <span style={pill("#2d5e3f", "#e8f2ec")}>Shipped · verified</span>
+                  <span>Onboarding · 312 users affected</span>
+                </div>
+                <h4 style={{ margin: "8px 0 6px", fontSize: 14, lineHeight: 1.35, letterSpacing: "-.02em", fontWeight: 600 }}>Users were leaving when asked to configure their first data source.</h4>
+                <p style={{ margin: 0, color: C.body, fontSize: 10, lineHeight: 1.5 }}>Paperplane traced the drop-off to a documentation handoff. It wrote an in-product walkthrough, opened a PR, and setup completion is already recovering.</p>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 16, marginTop: 12, paddingTop: 10, borderTop: `1px solid ${C.soft}` }}>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 28 }}>
+                    {[42, 38, 24, 52, 71].map((h, i) => <span key={i} style={{ width: 14, height: `${h}%`, background: i === 2 ? C.terra : "#cfd3ce", borderRadius: "2px 2px 0 0" }} />)}
+                  </div>
+                  <div><strong style={{ display: "block", fontSize: 12 }}>+15%</strong><small style={{ display: "block", marginTop: 1, color: "#aaa", fontSize: 8 }}>setup completion</small></div>
+                  <div><strong style={{ display: "block", fontSize: 12 }}>2 days</strong><small style={{ display: "block", marginTop: 1, color: "#aaa", fontSize: 8 }}>signal to merged PR</small></div>
+                </div>
+              </div>
+              <div className="recommendation" style={{ padding: 13, alignSelf: "stretch", background: "#f7f7f3", borderRadius: 8 }}>
+                <span style={{ display: "block", marginBottom: 5, color: C.faint, letterSpacing: ".12em", fontSize: 9, fontWeight: 600, fontFamily: MONO }}>NEXT UP</span>
+                <p style={{ margin: "10px 0 12px", fontSize: 11, lineHeight: 1.45, fontWeight: 600, letterSpacing: "-.01em" }}>Teams that invite a second user in week one retain 2.1× better. PR ready to nudge the invite flow.</p>
+                <div style={{ width: "100%", height: 28, display: "flex", alignItems: "center", justifyContent: "space-between", border: `1px solid ${C.border}`, background: "white", borderRadius: 6, padding: "0 9px", color: C.body, fontSize: 9, cursor: "pointer" }}><span>View PR draft</span><span>→</span></div>
+              </div>
+            </div>
+            <div style={{ borderTop: `1px solid ${C.soft}` }}>
+              {[{ idx: "02", tl: "PR ready", tc: "#8d4a3d", tb: C.terraSoft, text: "Mobile users repeatedly miss the export action. layout fix drafted." },
+                { idx: "03", tl: "Monitoring", tc: C.denim, tb: C.denimSoft, text: "Safari autofill fix from last week holding. signup +4.1%." }
+              ].map((row, i) => (
+                <div key={i} className="insight-list-row" style={{ display: "grid", gridTemplateColumns: "28px 78px 1fr 18px", alignItems: "center", gap: 8, minHeight: 42, padding: "0 18px", borderBottom: i === 0 ? `1px solid ${C.soft}` : "none", fontSize: 10 }}>
+                  <span style={{ color: "#aaa", fontFamily: MONO, fontSize: 9 }}>{row.idx}</span>
+                  <span style={pill(row.tc, row.tb)}>{row.tl}</span>
+                  <strong style={{ fontSize: 11, fontWeight: 500 }}>{row.text}</strong>
+                  <span style={{ color: "#999", fontSize: 10 }}>↗</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div style={{ position: "relative" }}>
-      <div style={{ height: paneH ?? "auto", overflow: "hidden" }}>{panes[tab]}</div>
-      <div ref={measureRef} style={{ position: "absolute", top: 0, left: 0, right: 0, visibility: "hidden", pointerEvents: "none" }} aria-hidden="true">{panes.assign}</div>
-    </div>
-  </div>);
+  );
 }
 
-/* ── problem stack (original design) ── */
-function ProblemStack() {
-  const items = [
-    { t: "Onboarding drop at step 3", src: "312 users · sessions + funnel", color: C.terra },
-    { t: "Rage clicks on disabled invite", src: "34 accounts · sessions", color: C.terra },
-    { t: "CSV export fails over 10k rows", src: "47 users · errors + sessions", color: C.gold },
-  ];
-  return (<div style={{ position: "relative", maxWidth: 600, margin: "0 auto", paddingBottom: 24 }}>
-    <div style={{ position: "absolute", top: 5, left: 5, right: 5, bottom: 18, background: C.soft, border: `1px solid ${C.border}`, borderRadius: R - 2, zIndex: 0 }} />
-    <div style={{ position: "absolute", top: 10, left: 10, right: 10, bottom: 12, background: `${C.page}DD`, border: `1px solid ${C.border}`, borderRadius: R - 4, zIndex: 0 }} />
-    <div style={{ position: "absolute", top: 15, left: 15, right: 15, bottom: 6, background: C.soft, border: `1px solid ${C.border}`, borderRadius: R - 6, zIndex: 0, opacity: .4 }} />
-    <div style={{ position: "relative", zIndex: 1, background: C.paper, border: `1px solid ${C.border}`, borderRadius: R, overflow: "hidden", boxShadow: shadow }}>
-      {items.map((r, i) => (
-        <div key={i} style={{ padding: "13px 16px", borderBottom: i < items.length - 1 ? `1px solid ${C.soft}` : "none", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ width: 5, height: 5, background: r.color, borderRadius: 999, flexShrink: 0 }} />
-          <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, color: C.ink, marginBottom: 2 }}>{r.t}</div><div style={{ fontFamily: MONO, fontSize: 10, color: C.faint }}>{r.src}</div></div>
-          <span style={tag(r.color, r.color === C.terra ? C.terraSoft : C.goldSoft, r.color === C.terra ? C.terraLine : C.goldLine)}>{r.color === C.terra ? "HIGH" : "MED"}</span>
+/* ── where it lives: tabbed surface demos ── */
+const SURFACE_STEP_MIN = 320;
+const SURFACE_STEP_MAX = 480;
+const SURFACE_STEP_VH = 42;
+const SURFACE_TOP_PAD = 100;
+
+function SurfaceTabs() {
+  const [active, setActive] = useState(0);
+  const activeRef = useRef(0);
+  const heightRef = useRef(0);
+  const wrapRef = useRef(null);
+  const pinRef = useRef(null);
+  const rafRef = useRef(null);
+  const labels = ["Web", "Slack", "Terminal"];
+
+  const step = () => Math.min(Math.max(window.innerHeight * (SURFACE_STEP_VH / 100), SURFACE_STEP_MIN), SURFACE_STEP_MAX);
+
+  useEffect(() => {
+    const compute = () => {
+      rafRef.current = null;
+      const el = wrapRef.current, pinEl = pinRef.current;
+      if (!el || !pinEl) return;
+      if (window.innerWidth <= 760) { el.style.height = "auto"; return; }
+
+      const total = step() * labels.length;
+      const pinH = pinEl.offsetHeight;
+      const wrapH = pinH + total;
+      if (heightRef.current !== wrapH) { heightRef.current = wrapH; el.style.height = `${wrapH}px`; }
+
+      const rect = el.getBoundingClientRect();
+      const scrolled = Math.min(Math.max(SURFACE_TOP_PAD - rect.top, 0), total);
+      const idx = Math.min(labels.length - 1, Math.floor((scrolled / total) * labels.length));
+      if (idx !== activeRef.current) { activeRef.current = idx; setActive(idx); }
+    };
+    const onScroll = () => { if (rafRef.current == null) rafRef.current = requestAnimationFrame(compute); };
+    compute();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, []);
+
+  const click = (i) => {
+    const el = wrapRef.current;
+    if (!el || window.innerWidth <= 760) { activeRef.current = i; setActive(i); return; }
+    const total = step() * labels.length;
+    const docTop = el.getBoundingClientRect().top + window.scrollY;
+    activeRef.current = i;
+    window.scrollTo({ top: docTop - SURFACE_TOP_PAD + (i + 0.5) / labels.length * total, behavior: "smooth" });
+  };
+
+  const webPanel = (
+    <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: C.paper, boxShadow: `0 16px 48px -22px ${C.ink}1A`, maxWidth: 640, width: "100%", display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ padding: "10px 16px", borderBottom: `1px solid ${C.soft}`, background: "#fafaf7", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: MONO, fontSize: 10.5, color: C.faint }}>paperplane</span>
+        <span style={{ fontFamily: MONO, fontSize: 10.5, color: C.faint }}>Acme / Activity</span>
+      </div>
+      <div style={{ padding: "6px 0", flex: 1, overflow: "hidden" }}>
+        {[
+          { time: "Today, 10:44 AM", dot: C.green, label: "Verified", lc: "#2d5e3f", lb: "#e8f2ec", bold: "Verified:", rest: " checkout timeout fix confirmed. Payment completion +8.3%, holding across all segments.", meta: "PR #267" },
+          { time: "Yesterday, 3:12 PM", dot: C.denim, label: "Monitoring", lc: C.denim, lb: C.denimSoft, bold: "Deployed.", rest: " Monitoring started for checkout completion metric.", meta: "PR #267" },
+          { time: "Yesterday, 11:20 AM", dot: C.green, label: "Merged", lc: "#2d5e3f", lb: "#e8f2ec", bold: "PR #267 merged", rest: " by @sarah. Timeout increased to 8s, retry logic added.", meta: "reviewed in 22 min" },
+          { time: "Monday, 9:48 AM", dot: C.gold, label: "PR ready", lc: "#8a6a1f", lb: C.goldSoft, bold: "PR #267 opened.", rest: " Fix for 3s API timeout on slow connections. 312 affected sessions attached.", meta: "est. impact: +6-9%" },
+          { time: "Monday, 9:31 AM", dot: C.terra, label: "High impact", lc: "#8d4a3d", lb: C.terraSoft, bold: "Signal detected:", rest: " checkout completion dropped 8%. Root cause traced to API timeout on mobile.", meta: "312 users" },
+        ].map((item, i) => (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "110px 10px 1fr", gap: 12, alignItems: "start", padding: "14px 20px", borderBottom: i < 4 ? `1px solid ${C.soft}` : "none" }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: C.faint, paddingTop: 3, textAlign: "right" }}>{item.time}</div>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: item.dot, marginTop: 6 }} />
+            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: C.body }}>
+              <strong style={{ color: C.ink }}>{item.bold}</strong>{item.rest}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, fontSize: 10, color: C.faint }}>
+                <span style={pill(item.lc, item.lb)}>{item.label}</span>{item.meta}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const slackPanel = (
+    <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: C.paper, boxShadow: `0 16px 48px -22px ${C.ink}1A`, maxWidth: 640 }}>
+      <div style={{ padding: "12px 20px", borderBottom: `1px solid ${C.soft}`, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}># product-signals <span style={{ color: C.faint, fontWeight: 400, fontSize: 11 }}>3 new messages</span></div>
+      <div style={{ padding: "16px 20px" }}>
+        {[
+          { msg: <><strong>Fix verified:</strong> Safari autofill fix (PR #238) deployed 3 days ago. Signup completion is up 4.1%. holding steady across all segments.</>,
+            embed: <><strong>Verification report</strong><br />Metric: signup completion 87.2% → 91.3%<br />Affected sessions: 847 → 0<br />Confidence: causal (controlled rollout)<br />Status: logged to memory</>,
+            reactions: ["🎉 4", "👀 2"], time: "10:42 AM" },
+          { msg: <><strong>New signal:</strong> Teams that invite a second user in week one retain 2.1× better. This pattern is strong across all customer segments. I've drafted a PR to surface the invite prompt earlier. want me to open it?</>,
+            reactions: ["👍 3"], time: "10:43 AM" },
+        ].map((row, i) => (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "32px 1fr", gap: 10, marginBottom: i === 0 ? 16 : 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 7, display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700, fontFamily: MONO, background: C.denimSoft, color: C.denim }}>P</div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Paperplane <small style={{ fontWeight: 400, color: C.faint, fontSize: 10, marginLeft: 6 }}>{row.time}</small></div>
+              <div style={{ fontSize: 13, lineHeight: 1.55, color: C.body }}>{row.msg}</div>
+              {row.embed && <div style={{ marginTop: 8, padding: "10px 14px", borderLeft: `3px solid ${C.denim}`, background: "#f7f8f5", borderRadius: "0 6px 6px 0", fontSize: 11.5, lineHeight: 1.5, color: C.body }}>{row.embed}</div>}
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>{row.reactions.map((r, ri) => <span key={ri} style={{ padding: "3px 8px", background: C.soft, border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 11 }}>{r}</span>)}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const termPanel = (
+    <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#1a1d1c", boxShadow: `0 16px 48px -22px ${C.ink}1A`, maxWidth: 700 }}>
+      <div style={{ height: 38, display: "flex", alignItems: "center", padding: "0 14px", gap: 6, background: "#222524" }}>
+        {["#f49378", "#3a3d3b", "#3a3d3b"].map((bg, i) => <span key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: bg }} />)}
+      </div>
+      <div style={{ padding: "16px 18px", fontFamily: MONO, fontSize: 11.5, lineHeight: 1.7, color: "#a8aba6" }}>
+        <div><span style={{ color: C.denim }}>~</span> <span style={{ color: "#e0e2dd" }}>paperplane ask "what changed in onboarding this quarter?"</span></div>
+        <div>&nbsp;</div>
+        <div><span style={{ color: "#7dba8f" }}>Two fixes shipped, both verified.</span></div>
+        <div>&nbsp;</div>
+        <div><span style={{ color: "#d4a94b" }}>PR #241</span> <span style={{ color: "#555" }}>·</span> replaced doc handoff with in-product walkthrough</div>
+        <div>{"  "}Setup completion: <span style={{ color: "#7dba8f" }}>58% → 73%</span></div>
+        <div>{"  "}Time to first value: <span style={{ color: "#7dba8f" }}>-4.2 min</span></div>
+        <div>{"  "}Status: <span style={{ color: "#7dba8f" }}>verified</span> <span style={{ color: "#555" }}>· effect holding at 60 days</span></div>
+        <div>&nbsp;</div>
+        <div><span style={{ color: "#d4a94b" }}>PR #256</span> <span style={{ color: "#555" }}>·</span> moved invite prompt to end of first session</div>
+        <div>{"  "}Week-1 invite rate: <span style={{ color: "#7dba8f" }}>12% → 34%</span></div>
+        <div>{"  "}Status: <span style={{ color: "#d4a94b" }}>monitoring</span> <span style={{ color: "#555" }}>· 18 days post-deploy</span></div>
+        <div>&nbsp;</div>
+        <div><span style={{ color: "#555" }}>sources: 1,842 sessions · experiment 14 · releases 2.1, 2.3</span></div>
+        <div>&nbsp;</div>
+        <div><span style={{ color: C.denim }}>~</span> <span style={{ color: "#e0e2dd" }}>paperplane assign PR#256 @sarah --priority high</span></div>
+        <div><span style={{ color: "#7dba8f" }}>✓</span> Assigned to @sarah · notification sent to #product-signals</div>
+      </div>
+    </div>
+  );
+
+  const panel = active === 0 ? webPanel : active === 1 ? slackPanel : termPanel;
+
+  return (
+    <div ref={wrapRef} className="surface-scroll-wrap" style={{ height: `${SURFACE_STEP_MAX * labels.length + 700}px`, position: "relative" }}>
+      <div ref={pinRef} className="surface-pin" style={{ position: "sticky", top: SURFACE_TOP_PAD }}>
+        <div style={eyebrow}>Where it lives</div>
+        <h2 style={h2s}>It comes to you. Not the other way around.</h2>
+        <p style={{ ...ps, maxWidth: 600, marginBottom: 28 }}>Paperplane doesn't need its own tab in your workflow. PRs show up in GitHub. Updates land in Slack. Queries run in your terminal. The dashboard exists, but you'll rarely need to open it.</p>
+        <div style={{ display: "flex", gap: 0, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden", width: "max-content", marginBottom: 28 }} className="surface-tabs">
+          {labels.map((l, i) => (
+            <button key={l} onClick={() => click(i)} className="surface-tab" style={{ padding: "10px 22px", background: active === i ? C.ink : "none", border: "none", borderRight: i < 2 ? `1px solid ${C.border}` : "none", fontSize: 12, fontWeight: 500, color: active === i ? "#fff" : C.faint, fontFamily: MONO, letterSpacing: ".02em", cursor: "pointer", transition: "background .15s, color .15s" }}>{l}</button>
+          ))}
         </div>
+        <div className="surface-inner" style={{ height: 460, display: "flex", alignItems: "flex-start" }}>
+          {panel}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── cycle diagram ── */
+function CycleDiagram() {
+  const CW = 300, CH = 230, GAP = 14;
+  const nodes = [
+    { label: "Watch", color: C.denim },
+    { label: "Diagnose", color: C.terra },
+    { label: "Verify", color: C.gold },
+    { label: "Fix", color: C.green },
+  ];
+  const arrows = [
+    { x: "50%", y: "25%", rotate: 0 },
+    { x: "75%", y: "50%", rotate: 90 },
+    { x: "50%", y: "75%", rotate: 180 },
+    { x: "25%", y: "50%", rotate: -90 },
+  ];
+  return (
+    <div className="cycle-diagram" style={{ position: "relative", width: CW, height: CH, justifySelf: "end" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: GAP, width: "100%", height: "100%" }}>
+        {nodes.map(n => (
+          <div key={n.label} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: shadow, fontFamily: MONO, fontSize: 12, fontWeight: 500, letterSpacing: ".02em", color: C.ink }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: n.color }} />{n.label}
+          </div>
+        ))}
+      </div>
+      {arrows.map((a, i) => (
+        <span key={i} style={{ position: "absolute", left: a.x, top: a.y, transform: `translate(-50%,-50%) rotate(${a.rotate}deg)`, color: C.terra, fontSize: 16, lineHeight: 1, fontWeight: 600 }}>›</span>
       ))}
     </div>
-    <div style={{ textAlign: "center", marginTop: 10, fontFamily: MONO, fontSize: 10, color: C.faint, opacity: .5 }}>+ 11 more</div>
-  </div>);
+  );
 }
 
 function NotFound({ onNavigate }) {
@@ -220,33 +391,19 @@ function NotFound({ onNavigate }) {
   </div>);
 }
 
-const PILLARS = [
-  { k: "Ask", d: "\"Where are enterprise users getting stuck?\" Query your data in plain English. It maps patterns in the context layer to give you clear answers grounded in real user behavior.", t: "talk to your product data" },
-  { k: "Assign", d: "Drop in a support thread or tag @paperplane in Slack. It finds the matching user session, reproduces the bug, and drafts a PR with evidence attached.", t: "bug report to pull request" },
-  { k: "Deploy", d: "paperplane runs on autopilot 24/7. It catches broken funnels, writes the code fix, and adds ready-to-merge PRs to your team queue before revenue leaks.", t: "self-improving product loop" },
-];
-const COMPARE = [
-  ["Noticing", "Someone scrubs replays when they have time", "Every session, funnel, and error log watched automatically"],
-  ["Diagnosing", "Guess from a metric drop, ask engineering to dig", "Root cause traced across sessions, errors, and code changes"],
-  ["Fixing", "Ticket filed, sits behind roadmap work", "PR opened with the change written and evidence attached"],
-  ["Verifying", "Nobody checks whether it helped", "Impact measured after deploy, reopened if it didn't work"],
-];
-const TRACE = [
-  ["session #4412", "user pastes email, the field clears"],
-  ["47 more sessions", "same clear event, all Safari 17.x"],
-  ["error log", "validation throws on autofill input"],
-  ["commit a19f3c", "autocomplete attribute removed Tuesday"],
-  ["fix", "restore the attribute, add a regression test"],
+const HOW_STEPS = [
+  { title: "Watch", desc: "Monitors sessions, errors, and funnels 24/7 to catch friction in real time.", color: C.denim },
+  { title: "Fix", desc: "Traces root causes to code and opens a pull request with session evidence.", color: C.gold },
+  { title: "Learn", desc: "Tracks post-deploy impact and updates product memory to improve future fixes.", color: C.terra },
 ];
 
 function Home({ onNavigate }) {
   return (<div style={{ background: C.page, color: C.ink, fontFamily: INTER }}>
 
-    {/* ═══ HERO + IMAGE + INTERACTIVE (one continuous stitched section) ═══ */}
+    {/* ═══ HERO ═══ */}
     <section style={stitchBg}>
-      {/* hero text */}
-      <div style={{ padding: "clamp(32px,5vw,56px) clamp(24px,6vw,56px) calc(clamp(16px,2vw,24px) + 20px)" }}>
-        <div style={wrap(WIDE)}>
+      <div style={{ padding: "clamp(32px,5vw,56px) 0 0" }}>
+        <div style={wrap(IMG_W)}>
           <F>
             <h1 style={{ fontSize: "clamp(28px,4.2vw,44px)", fontWeight: 600, lineHeight: 1.08, letterSpacing: "-.04em", marginBottom: 8 }}>Make your product self-improving</h1>
             <p style={{ ...ps, fontSize: "clamp(14.5px,1.7vw,16px)", maxWidth: 520, marginBottom: 10 }}>
@@ -256,62 +413,16 @@ function Home({ onNavigate }) {
           </F>
         </div>
       </div>
-
-      {/* image with interactive floating inside — image height follows the surface's own (assign-tab-driven) height plus variable padding, not a fixed px value */}
-      <div style={{ padding: "0 clamp(24px,6vw,56px)" }}>
-        <div style={{ maxWidth: IMG_W, margin: "0 auto" }}>
+      <div style={{ padding: "clamp(20px,3vw,26px) 0 clamp(60px,8.5vw,100px)" }}>
+        <div style={wrap(IMG_W)}>
           <div style={{ position: "relative", overflow: "hidden", border: `1px solid ${C.border}`, background: C.page }}>
             <img src={I.hero} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 42%", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: C.page, opacity: .74 }} />
-            <div style={{ position: "relative", zIndex: 2, display: "flex", justifyContent: "center", padding: "26px clamp(16px,4vw,60px)" }}>
-              <div style={{ width: "100%", maxWidth: 840 }}>
-                <F><Surface /></F>
-              </div>
+            <div style={{ position: "relative", zIndex: 2, display: "flex", justifyContent: "center", padding: "clamp(16px,3vw,30px) clamp(16px,4vw,50px)" }}>
+              <F><HeroDashboard /></F>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* click through + bottom padding, matched to the other sections' rhythm */}
-      <div style={{ padding: "18px clamp(24px,6vw,56px) clamp(15px,8.5vw,75px)" }}>
-        <div style={{ fontFamily: MONO, fontSize: 10.5, color: C.faint, textAlign: "center" }}>click through the tabs</div>
-      </div>
-    </section>
-
-    <SectionLine />
-
-    {/* ═══ THREE PROPS ═══ */}
-    <section style={{ padding: pad, background: C.paper }}>
-      <div style={wrap(WIDE)}>
-        <div className="g3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 30 }}>
-          {[
-            ["01", "Context Layer", "Connects user sessions, funnels, and error logs 24/7 into a full context layer of your product.", C.denim],
-            ["02", "Automated PRs", "Traces broken user flows down to the code and drafts the fix for you.", C.gold],
-            ["03", "Product Memory", "Learns from merged PRs and post-fix metrics to improve diagnosis accuracy and ship cleaner fixes.", C.terra],
-          ].map(([n, t, d, col], i) => (
-            <F key={i} delay={i * .07}><div style={{ borderTop: `2px solid ${col}`, paddingTop: 16 }}>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: col, marginBottom: 12 }}>{n}</div>
-              <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-.02em", marginBottom: 8 }}>{t}</div>
-              <div style={{ fontSize: 14.5, lineHeight: 1.66, color: C.body }}>{d}</div>
-            </div></F>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <DottedRule />
-
-    {/* ═══ PROBLEM ═══ */}
-    <section style={{ padding: pad, ...stitchBg }}>
-      <div style={wrap(NARROW)}>
-        <F>
-          <div style={eyebrow}>[ 01 ] The problem</div>
-          <h2 style={h2s}>You have the data. Nobody has the hours.</h2>
-          <p style={{ ...ps, maxWidth: 600, marginBottom: 36 }}>
-            Your stack already logs every broken funnel and API error. But tracing a drop-off down to the exact lines of code takes hours of manual digging. So bugs pile up, friction stays, and users quietly leave.
-          </p>
-        </F>
-        <F delay={.08}><ProblemStack /></F>
       </div>
     </section>
 
@@ -319,76 +430,186 @@ function Home({ onNavigate }) {
 
     {/* ═══ HOW IT WORKS ═══ */}
     <section style={{ padding: pad, background: C.paper }}>
-      <div style={wrap(WIDE)}>
-        <F>
-          <div style={eyebrow}>[ 02 ] How it works</div>
-          <h2 style={h2s}>One agent across your whole stack.</h2>
-          <p style={{ ...ps, maxWidth: 560, marginBottom: 38 }}>
-            Paperplane connects your product analytics, error logs, Slack threads, and codebase into a single context layer. Ask it questions, hand it bugs, or let it run on autopilot. It investigates the issue and writes the code fix in a ready-to-merge pull request.
-          </p>
-        </F>
-        <div className="g3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-          {PILLARS.map((c, i) => {
-            const cols = [[C.denim, C.denimSoft, C.denimLine], [C.gold, C.goldSoft, C.goldLine], [C.terra, C.terraSoft, C.terraLine]][i];
-            return (<F key={i} delay={i * .07}><div style={{ background: C.page, border: `1px solid ${C.border}`, padding: "24px 21px", height: "100%", display: "flex", flexDirection: "column" }}>
-              <div style={{ width: 26, height: 3, background: cols[0], marginBottom: 16 }} />
-              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 9, color: C.ink }}>{c.k}</div>
-              <div style={{ fontSize: 14, lineHeight: 1.66, color: C.body, flex: 1 }}>{c.d}</div>
-              <div style={{ marginTop: 16, paddingTop: 12, borderTop: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 10, color: C.faint }}>{c.t}</div>
-            </div></F>);
-          })}
+      <div style={wrap(IMG_W)}>
+        <div className="problem-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+          <div>
+            <F>
+              <div style={eyebrow}>How it works</div>
+              <h2 style={h2s}>A loop, not a tool.</h2>
+              <p style={{ ...ps, maxWidth: 600, textWrap: "balance" }}>Your stack captures every drop-off and error, but turning that data into fixes takes hours of manual digging through logs and code. Paperplane automates the entire loop: it spots the issues, writes the fix, opens a PR, and learns from the results to get better over time.</p>
+            </F>
+          </div>
+          <F delay={.08}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 28, marginTop: 14 }}>
+              {HOW_STEPS.map((step, i) => (
+                <div key={i} style={{ display: "flex", gap: 14 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".04em", color: step.color, lineHeight: 1, position: "relative", top: 3 }}>0{i + 1}</span>
+                  <div>
+                    <h4 style={{ fontSize: 16, lineHeight: 1, marginBottom: 10, letterSpacing: "-.01em", fontWeight: 600 }}>{step.title}</h4>
+                    <div style={{ width: 56, height: 3, background: step.color, marginBottom: 14 }} />
+                    <p style={{ fontSize: 13.5, lineHeight: 1.6, color: C.body }}>{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </F>
         </div>
       </div>
     </section>
 
     <DottedRule />
 
-    {/* ═══ EVIDENCE ═══ */}
+    {/* ═══ WHAT'S INCLUDED ═══ */}
     <section style={{ padding: pad, ...stitchBg }}>
-      <div style={wrap(NARROW)}>
+      <div style={wrap(IMG_W)}>
         <F>
-          <div style={eyebrow}>[ 03 ] Evidence</div>
-          <h2 style={h2s}>You can see the work.</h2>
-          <p style={{ ...ps, maxWidth: 500, marginBottom: 28 }}>
-            Every fix includes the exact evidence chain. You can inspect the user sessions, the error logs, and the git diff before approving any changes.
-          </p>
-        </F>
-        <F delay={.06}>
-          <div style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: R, padding: "4px 0", boxShadow: shadow }}>
-            {TRACE.map(([k, v], i) => (
-              <div key={i} style={{ display: "flex", gap: 14, alignItems: "center", padding: "13px 18px", borderBottom: i < TRACE.length - 1 ? `1px solid ${C.soft}` : "none" }}>
-                <span style={{ fontFamily: MONO, fontSize: 10, width: 110, flexShrink: 0, color: i === TRACE.length - 1 ? C.terra : C.faint }}>{k}</span>
-                <span style={{ fontSize: 13.5, lineHeight: 1.5 }}>{v}</span>
-              </div>
-            ))}
+          <div style={{ maxWidth: 900, margin: "0 auto 48px", textAlign: "center" }}>
+            <div style={eyebrow}>What it does</div>
+            <h2 style={h2s}>Everything from the signal to the shipped fix.</h2>
           </div>
         </F>
+
+        <div className="feature-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {/* Wide: Continuous discovery */}
+          <F style={{ gridColumn: "1 / -1" }}><article className="feature-wide" style={{ background: "white", border: `1px solid ${C.border}`, minHeight: 400, display: "grid", gridTemplateColumns: ".8fr 1.2fr", gap: 50, alignItems: "center", padding: 34, overflow: "hidden" }}>
+            <div>
+              <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: C.denim }}>Continuous discovery</span>
+              <h3 style={{ fontSize: "clamp(22px,2.8vw,28px)", lineHeight: 1.12, letterSpacing: "-.035em", margin: "12px 0 14px", fontWeight: 600 }}>It watches your product so you don't have to.</h3>
+              <p style={{ fontSize: 15, lineHeight: 1.68, color: C.body }}>Paperplane monitors sessions, funnels, errors, and releases continuously. When something changes (a drop-off spikes, a flow breaks after a deploy, a segment starts behaving differently), it surfaces the signal with context attached.</p>
+              {["Groups related signals instead of flooding you with alerts", "Separates real friction from one-off noise", "Ranks by combining user impact with volume"].map((t, i) => (
+                <div key={i} style={{ fontSize: 13.5, color: C.body, margin: "10px 0", display: "flex", gap: 6 }}><span style={{ color: C.denim, flexShrink: 0 }}>↳</span>{t}</div>
+              ))}
+            </div>
+            <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
+              <div style={{ height: 46, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: "#f8f8f5", borderBottom: `1px solid ${C.border}`, fontSize: 12, fontWeight: 600 }}>
+                <span>Emerging signals</span><small style={{ color: C.faint, fontWeight: 400, fontSize: 10 }}>Updated 4 min ago</small>
+              </div>
+              {[
+                { icon: "↘", text: "Activation dropped after release 2.4", sub: "Root cause: workspace setup flow changed", pri: "High", active: true, iconColor: C.terra },
+                { icon: "↗", text: "Teams with 2+ users in week one retain 2.1× better", sub: "Pattern holds across all segments", pri: "New", iconColor: C.denim },
+                { icon: "!", text: "Safari autofill silently breaking email field", sub: "41 sessions · 18 accounts · PR drafted", pri: "Fix ready", iconColor: C.terra },
+              ].map((s, i) => (
+                <div key={i} style={{ minHeight: 68, display: "grid", gridTemplateColumns: "30px 1fr 34px", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: i < 2 ? `1px solid ${C.soft}` : "none", ...(s.active ? { background: C.terraSoft } : {}) }}>
+                  <div style={{ width: 28, height: 28, display: "grid", placeItems: "center", borderRadius: 7, background: C.soft, color: s.iconColor, fontSize: 12, fontWeight: 600 }}>{s.icon}</div>
+                  <div><strong style={{ display: "block", fontSize: 11 }}>{s.text}</strong><small style={{ display: "block", marginTop: 4, color: C.faint, fontSize: 9 }}>{s.sub}</small></div>
+                  <span style={{ fontSize: 9, fontFamily: MONO, color: C.faint }}>{s.pri}</span>
+                </div>
+              ))}
+            </div>
+          </article></F>
+
+          {/* Half: Automated PRs */}
+          <F delay={.06} style={{ height: "100%" }}><article style={{ height: "100%", background: "white", border: `1px solid ${C.border}`, minHeight: 440, padding: 34, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div>
+              <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: C.gold }}>Automated pull requests</span>
+              <h3 style={{ fontSize: "clamp(22px,2.8vw,28px)", lineHeight: 1.12, letterSpacing: "-.035em", margin: "12px 0 14px", fontWeight: 600 }}>The output is code.</h3>
+              <p style={{ fontSize: 15, lineHeight: 1.68, color: C.body }}>When Paperplane finds something worth fixing, it traces the problem down to the lines of code, writes the change, and opens a PR with the full evidence chain attached. Your team reviews it like any other pull request.</p>
+            </div>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", marginTop: 28 }}>
+              <div style={{ width: "100%", border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fbfbf8", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
+                <div style={{ padding: "11px 14px", borderBottom: `1px solid ${C.soft}`, display: "flex", justifyContent: "space-between", fontSize: 11, fontFamily: MONO }}>
+                  <span>paperplane/fix-safari-autofill</span><span style={{ color: C.green, fontWeight: 600 }}>● ready</span>
+                </div>
+                <div style={{ padding: "8px 0", fontFamily: MONO, fontSize: 10.5, lineHeight: 1.7 }}>
+                  <div style={{ padding: "2px 14px", background: "#fff0ef", color: "#8d4a3d" }}>- autoComplete="off"</div>
+                  <div style={{ padding: "2px 14px", background: "#eef6f0", color: "#3e6b4d" }}>+ autoComplete="email"</div>
+                  <div style={{ padding: "2px 14px", background: "#eef6f0", color: "#3e6b4d" }}>+ test('preserves Safari autofill')</div>
+                </div>
+                <div style={{ padding: "10px 14px", borderTop: `1px solid ${C.soft}`, display: "flex", gap: 8 }}>
+                  <button style={{ border: `1px solid ${C.border}`, background: "white", borderRadius: 6, padding: "6px 10px", fontSize: 10, cursor: "pointer", fontFamily: INTER }}>View 847 sessions</button>
+                  <button style={{ border: "1px solid #b8cdbd", background: "#eef6f0", borderRadius: 6, padding: "6px 10px", fontSize: 10, color: "#416b4d", cursor: "pointer", fontFamily: INTER }}>Approve PR</button>
+                </div>
+              </div>
+            </div>
+          </article></F>
+
+          {/* Half: Verification */}
+          <F delay={.08} style={{ height: "100%" }}><article style={{ height: "100%", background: "white", border: `1px solid ${C.border}`, minHeight: 440, padding: 34, display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden" }}>
+            <div>
+              <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: C.green }}>Verification</span>
+              <h3 style={{ fontSize: "clamp(22px,2.8vw,28px)", lineHeight: 1.12, letterSpacing: "-.035em", margin: "12px 0 14px", fontWeight: 600 }}>It checks its own work.</h3>
+              <p style={{ fontSize: 15, lineHeight: 1.68, color: C.body }}>After a fix is deployed, Paperplane tracks the metric to verify the result. Verified fixes get logged to memory, while unresolved issues reopen the ticket.</p>
+            </div>
+            <div style={{ marginTop: 28, padding: 20, border: `1px solid ${C.border}`, borderRadius: 12, background: "#f9fbf8", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={pill("#2d5e3f", "#e8f2ec")}>Verified</span>
+                <span style={{ color: C.faint, fontSize: 9, fontFamily: MONO }}>3 days post-deploy</span>
+              </div>
+              <h4 style={{ margin: "16px 0 20px", fontSize: 16, lineHeight: 1.4, letterSpacing: "-.02em", fontWeight: 600 }}>Safari autofill fix / email field</h4>
+              {[["Signup completion", "+4.1%", C.green], ["Affected sessions", "847 → 0", null], ["Status", "Logged to memory", C.green]].map(([k, v, color], i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 0", borderTop: `1px solid #e5e8e1`, ...(i === 2 ? { borderBottom: "none" } : { borderBottom: i === 1 ? `1px solid #e5e8e1` : "none" }), fontSize: 11 }}>
+                  <span>{k}</span><strong style={color ? { color } : {}}>{v}</strong>
+                </div>
+              ))}
+            </div>
+          </article></F>
+
+          {/* Wide: Product memory */}
+          <F style={{ gridColumn: "1 / -1" }}><article className="feature-wide" style={{ background: "white", border: `1px solid ${C.border}`, minHeight: 400, display: "grid", gridTemplateColumns: ".8fr 1.2fr", gap: 50, alignItems: "center", padding: 34, overflow: "hidden" }}>
+            <div>
+              <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: C.denim }}>Product memory</span>
+              <h3 style={{ fontSize: "clamp(22px,2.8vw,28px)", lineHeight: 1.12, letterSpacing: "-.035em", margin: "12px 0 14px", fontWeight: 600 }}>It gets better the longer you use it.</h3>
+              <p style={{ fontSize: 15, lineHeight: 1.68, color: C.body }}>Every fix, every experiment, every outcome gets logged. Over time, Paperplane builds a running understanding of your product. What's been tried, what works, what your users respond to. So every new fix builds on past experience.</p>
+              {["Past outcomes inform new fixes", "Ask it anything about your product's history", "Fix accuracy and speed improve over time"].map((t, i) => (
+                <div key={i} style={{ fontSize: 13.5, color: C.body, margin: "10px 0", display: "flex", gap: 6 }}><span style={{ color: C.denim, flexShrink: 0 }}>↳</span>{t}</div>
+              ))}
+            </div>
+            <div style={{ border: `1px solid ${C.border}`, background: "#fbfbf8", borderRadius: 12, padding: 20, boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
+              <span style={{ display: "block", marginBottom: 5, color: C.faint, letterSpacing: ".12em", fontSize: 9, fontWeight: 600, fontFamily: MONO }}>ASK PAPERPLANE</span>
+              <div style={{ border: `1px solid ${C.border}`, background: "white", borderRadius: 8, padding: "11px 13px", fontSize: 12.5 }}>What changed in onboarding this quarter?</div>
+              <div style={{ marginTop: 14, fontSize: 13, lineHeight: 1.55, color: C.body }}><strong style={{ color: C.ink }}>Two fixes shipped, both verified.</strong> The documentation handoff was replaced with an in-product walkthrough (PR #241, March 14). Setup completion went from 58% to 73%. The invite nudge (PR #256, April 2) hasn't been verified yet. still monitoring.</div>
+              <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
+                {[["58% → 73%", "Setup completion"], ["4.2 minutes", "Time to first value dropped by"], ["60 days", "Effect still holding after"]].map(([bold, text], i) => (
+                  <div key={i} style={{ display: "flex", gap: 9, fontSize: 11.5, color: C.body }}>
+                    <span style={{ width: 6, height: 6, background: C.terra, borderRadius: "50%", marginTop: 5, flex: "0 0 auto" }} />
+                    <span>{text}: <strong style={{ color: C.ink }}>{bold}</strong></span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 14 }}>
+                {["PR #241", "PR #256", "1,842 sessions", "experiment 14"].map(s => <span key={s} style={{ fontFamily: MONO, fontSize: 9.5, background: C.soft, border: `1px solid ${C.border}`, padding: "4px 7px", borderRadius: 4, color: C.faint }}>{s}</span>)}
+              </div>
+            </div>
+          </article></F>
+        </div>
       </div>
     </section>
 
     <SectionLine />
 
-    {/* ═══ COMPARE ═══ */}
+    {/* ═══ SAME BUG, TWO TIMELINES ═══ */}
     <section style={{ padding: pad, background: C.paper }}>
-      <div style={wrap(WIDE)}>
+      <div style={wrap(IMG_W)}>
         <F>
-          <div style={eyebrow}>[ 04 ] What changes</div>
-          <h2 style={{ ...h2s, marginBottom: 30 }}>The same week, two ways.</h2>
+          <div style={{ maxWidth: 660 }}>
+            <div style={eyebrow}>The difference</div>
+            <h2 style={h2s}>The same bug, two timelines.</h2>
+          </div>
         </F>
         <F delay={.06}>
-          <div style={{ border: `1px solid ${C.border}`, overflow: "hidden" }}>
-            <div className="cmp" style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr", background: C.page, borderBottom: `1px solid ${C.border}` }}>
-              <div style={{ padding: "11px 16px" }} />
-              <div style={{ padding: "11px 16px", fontFamily: MONO, fontSize: 10.5, color: C.faint, letterSpacing: ".07em" }}>TODAY</div>
-              <div style={{ padding: "11px 16px", fontFamily: MONO, fontSize: 10.5, color: "#fff", letterSpacing: ".07em", background: C.denimDeep, backgroundImage: `url(${I.blue})`, backgroundSize: "cover", backgroundBlendMode: "overlay", boxShadow: `inset 0 0 0 200px ${C.denimDeep}C0` }}>WITH PAPERPLANE</div>
+          <div className="bug-columns" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}>
+            <div>
+              <h4 style={{ fontFamily: MONO, fontSize: 12, fontWeight: 500, letterSpacing: ".06em", color: C.faint, marginBottom: 20, paddingBottom: 12, borderBottom: `1.5px solid ${C.border}` }}>Without Paperplane</h4>
+              {[
+                "Day 1. Support tickets trickle in. Customer support team flags it.",
+                "Day 3. PM finds a drop in checkout completion. Can't pinpoint the cause. Loops in engineering to investigate.",
+                "Day 5. Engineer digs through replays and error logs. Narrows it to mobile. Suspects a timeout.",
+                "Day 8. Root cause confirmed. Engineer writes the fix, opens a PR.",
+                "Day 10. PR reviewed and merged. Ships in next release cycle.",
+                "Day 14+. Deployed. Maybe someone checks the metric. Maybe not.",
+              ].map((t, i) => <p key={i} style={{ fontSize: 14.5, lineHeight: 1.6, color: C.body, marginBottom: 10 }}>{t}</p>)}
+              <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 500, lineHeight: 1.5, color: C.faint, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>~2 weeks. 3 teams involved. No verification.</p>
             </div>
-            {COMPARE.map(([k, a, b], i) => (
-              <div key={i} className="cmp" style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr", borderBottom: i < 3 ? `1px solid ${C.soft}` : "none" }}>
-                <div style={{ padding: "12px 16px", fontFamily: MONO, fontSize: 10.5, color: C.faint, letterSpacing: ".05em", textTransform: "uppercase" }}>{k}</div>
-                <div style={{ padding: "12px 16px", fontSize: 13.5, lineHeight: 1.6, color: C.faint }}>{a}</div>
-                <div style={{ padding: "12px 16px", fontSize: 13.5, lineHeight: 1.6, color: C.ink, background: C.denimSoft }}>{b}</div>
-              </div>
-            ))}
+            <div>
+              <h4 style={{ fontFamily: MONO, fontSize: 12, fontWeight: 500, letterSpacing: ".06em", color: C.denim, marginBottom: 20, paddingBottom: 12, borderBottom: `1.5px solid ${C.denim}` }}>With Paperplane</h4>
+              {[
+                "Day 1, 9:31 AM. Signal detected. Checkout completion dropped 8%. Traced to a 3s API timeout on slow connections.",
+                "Day 1, 9:48 AM. PR opened. Fix, evidence, and 312 affected sessions attached. Slack notification sent.",
+                "Day 2. Engineer reviews the diff and evidence. Merged in 20 minutes.",
+                "Day 5. Verified. Checkout completion up 8.3%. Outcome logged to memory and next PRs are ready.",
+              ].map((t, i) => <p key={i} style={{ fontSize: 14.5, lineHeight: 1.6, color: C.body, marginBottom: 10 }}>{t}</p>)}
+              <p style={{ fontFamily: MONO, fontSize: 12, fontWeight: 500, lineHeight: 1.5, color: C.faint, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>~2 days. 1 person reviewed. Verified and logged.</p>
+            </div>
           </div>
         </F>
       </div>
@@ -398,40 +619,43 @@ function Home({ onNavigate }) {
 
     {/* ═══ WHERE IT LIVES ═══ */}
     <section style={{ padding: pad, ...stitchBg }}>
-      <div style={wrap(WIDE)}>
-        <F>
-          <div style={eyebrow}>[ 05 ] Where it lives</div>
-          <h2 style={h2s}>It lives where you work.</h2>
-          <p style={{ ...ps, maxWidth: 520, marginBottom: 34 }}>One context layer across your entire stack. No context-switching, no fragmented tools.</p>
-        </F>
-        <div className="g3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-          {[["Web", "Your central hub for high-level overview, metric trends, and pending team approvals.", C.denim],
-            ["Slack", "Triage bugs, run quick queries, and grant approvals without leaving your team chats.", C.gold],
-            ["Terminal", "Native CLI and MCP access directly from your terminal.", C.terra]
-          ].map(([t, d, col], i) => (
-            <F key={i} delay={i * .07}><div style={{ background: C.paper, border: `1px solid ${C.border}`, padding: "24px 21px", height: "100%" }}>
-              <div style={{ width: 26, height: 3, background: col, marginBottom: 16 }} />
-              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 9 }}>{t}</div>
-              <div style={{ fontSize: 14, lineHeight: 1.65, color: C.body }}>{d}</div>
-            </div></F>
-          ))}
-        </div>
+      <div style={wrap(IMG_W)}>
+        <SurfaceTabs />
       </div>
     </section>
 
     <SectionLine />
 
+    {/* ═══ THE CYCLE ═══ */}
+    <section style={{ padding: pad, background: C.paper }}>
+      <div style={wrap(IMG_W)}>
+        <F>
+          <div className="cycle-wrap" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+            <div>
+              <div style={eyebrow}>The cycle</div>
+              <h2 style={h2s}>It never stops running.</h2>
+              <p style={{ ...ps, maxWidth: 490, margin: "20px 0 28px" }}>Most tools end at the insight. Paperplane closes the loop: after a fix ships, it watches the metric, logs the outcome, and feeds that result back into the next diagnosis. The cycle runs continuously, and each pass makes the next one sharper.</p>
+              <button onClick={() => onNavigate("404")} style={btnLaunch}>See how it learns ↗</button>
+            </div>
+            <CycleDiagram />
+          </div>
+        </F>
+      </div>
+    </section>
+
+    <DottedRule />
+
     {/* ═══ CTA ═══ */}
-    <section style={{ padding: "clamp(48px,7vw,80px) clamp(24px,6vw,56px)", background: C.paper }}>
-      <div style={{ maxWidth: IMG_W, margin: "0 auto" }}>
+    <section style={{ padding: pad, ...stitchBg }}>
+      <div style={wrap(IMG_W)}>
         <F>
           <div style={{ position: "relative", overflow: "hidden", border: `1px solid ${C.border}`, background: C.page }}>
             <img src={I.cta} alt="" style={{ width: "100%", height: 320, objectFit: "cover", objectPosition: "center 45%", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: C.page, opacity: .74 }} />
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, padding: 24 }}>
-              <div style={{ background: `${C.page}F5`, backdropFilter: "blur(4px)", border: `1px solid ${C.border}`, borderRadius: R, padding: "clamp(24px,3vw,30px) clamp(32px,5vw,56px)", textAlign: "center", maxWidth: 580, boxShadow: shadow }}>
-                <h2 style={{ ...h2s, marginBottom: 10 }}>Put your product on autopilot</h2>
-                <p style={{ ...ps, fontSize: 15, marginBottom: 20 }}>See what paperplane finds in your first week.</p>
+              <div style={{ background: C.page, border: `1px solid ${C.border}`, borderRadius: R, padding: "clamp(24px,3vw,30px) clamp(32px,5vw,56px)", textAlign: "center", maxWidth: 580, boxShadow: shadow }}>
+                <h2 style={{ ...h2s, marginBottom: 10 }}>See what your product can fix on its own</h2>
+                <p style={{ ...ps, fontSize: 15, marginBottom: 20 }}>Most teams get their first PR within a week.</p>
                 <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
                   <button onClick={() => onNavigate("404")} style={btnLaunch}>Launch</button>
                   <button onClick={() => onNavigate("404")} style={btnText}>Get a demo →</button>
@@ -446,7 +670,6 @@ function Home({ onNavigate }) {
   </div>);
 }
 
-/* ── favicon injection: sets the tab icon links on mount since this file has no index.html to edit directly ── */
 function useFavicon() {
   useEffect(() => {
     const setLink = (rel, href, extra = {}) => {
@@ -470,20 +693,42 @@ export default function App() {
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
       *{margin:0;padding:0;box-sizing:border-box}img{max-width:100%}button{font-family:inherit}
       ::selection{background:${C.goldSoft};color:${C.ink}}
-      .ask-trace{position:relative;margin-top:10px;margin-left:2px;padding-left:16px;display:flex;flex-direction:column}
-      .ask-trace-item{position:relative;margin-bottom:8px}
-      .ask-trace-item:last-child{margin-bottom:0}
-      .ask-trace-item::before{content:"";position:absolute;left:-16px;top:0;bottom:-8px;width:2px;background:${C.border}}
-      .ask-trace-item::after{content:"";position:absolute;left:-16px;top:.65em;width:9px;height:2px;background:${C.border}}
-      .ask-trace-last::before{bottom:auto;height:.65em}
-      @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+      html{scroll-snap-type:y proximity}
+      .surface-scroll-wrap{scroll-snap-align:start}
+      @media(prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-snap-type:none}}
+      @media(max-width:960px){
+        .problem-grid{grid-template-columns:1fr!important}
+        .feature-grid{grid-template-columns:1fr!important}
+        .feature-grid>div{grid-column:auto!important}
+        .feature-wide{grid-template-columns:1fr!important;display:flex!important;flex-direction:column!important;min-height:auto!important;gap:30px!important}
+        .bug-columns{grid-template-columns:1fr!important;gap:40px!important}
+        .cycle-wrap{grid-template-columns:1fr!important;text-align:center}
+        .cycle-diagram{justify-self:center!important;width:260px!important;height:260px!important}
+        .product-body{grid-template-columns:96px 1fr!important}
+        .sidebar{padding:12px 7px!important}
+        .featured-insight{grid-template-columns:28px 1fr!important}
+        .recommendation{grid-column:2}
+      }
       @media(max-width:760px){
-        .g3{grid-template-columns:1fr!important}
-        .cmp{grid-template-columns:1fr!important}
-        .cmp>div:first-child{display:none}
         .desktop-nav{display:none!important}
         .desktop-btn{display:none!important}
         .mobile-menu-btn{display:flex!important}
+        .product-body{grid-template-columns:1fr!important;min-height:auto!important}
+        .sidebar{display:none!important}
+        .dashboard-main{padding:16px 14px!important}
+        .summary-grid{grid-template-columns:1fr 1fr!important}
+        .summary-grid>div:last-child{display:none}
+        .featured-insight{grid-template-columns:1fr!important;padding:14px!important}
+        .featured-insight>div:first-child{display:none}
+        .recommendation{grid-column:auto}
+        .insight-list-row{grid-template-columns:24px 74px 1fr!important}
+        .insight-list-row>span:last-child{display:none}
+        .feature-grid article{min-height:auto!important;padding:24px!important}
+        .surface-tabs{flex-wrap:wrap;width:100%!important}
+        .surface-tab{flex:1;text-align:center;padding:10px 12px!important}
+        .surface-inner{height:400px!important}
+        .surface-scroll-wrap{height:auto!important;scroll-snap-align:none!important}
+        .surface-pin{position:relative!important;top:auto!important;left:auto!important;width:auto!important}
       }
     `}</style>
     <Header onNavigate={navigate} />

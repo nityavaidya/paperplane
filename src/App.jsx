@@ -198,57 +198,14 @@ function HeroDashboard() {
 }
 
 /* ── where it lives: tabbed surface demos ── */
-const SURFACE_STEP_MIN = 320;
-const SURFACE_STEP_MAX = 480;
-const SURFACE_STEP_VH = 42;
-const SURFACE_TOP_PAD = 100;
-
 function SurfaceTabs() {
   const [active, setActive] = useState(0);
-  const activeRef = useRef(0);
-  const heightRef = useRef(0);
-  const wrapRef = useRef(null);
-  const pinRef = useRef(null);
-  const rafRef = useRef(null);
   const labels = ["Web", "Slack", "Terminal"];
-
-  const step = () => Math.min(Math.max(window.innerHeight * (SURFACE_STEP_VH / 100), SURFACE_STEP_MIN), SURFACE_STEP_MAX);
-
-  useEffect(() => {
-    const compute = () => {
-      rafRef.current = null;
-      const el = wrapRef.current, pinEl = pinRef.current;
-      if (!el || !pinEl) return;
-      if (window.innerWidth <= 760) { el.style.height = "auto"; return; }
-
-      const total = step() * labels.length;
-      const pinH = pinEl.offsetHeight;
-      const wrapH = pinH + total;
-      if (heightRef.current !== wrapH) { heightRef.current = wrapH; el.style.height = `${wrapH}px`; }
-
-      const rect = el.getBoundingClientRect();
-      const scrolled = Math.min(Math.max(SURFACE_TOP_PAD - rect.top, 0), total);
-      const idx = Math.min(labels.length - 1, Math.floor((scrolled / total) * labels.length));
-      if (idx !== activeRef.current) { activeRef.current = idx; setActive(idx); }
-    };
-    const onScroll = () => { if (rafRef.current == null) rafRef.current = requestAnimationFrame(compute); };
-    compute();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, []);
-
-  const click = (i) => {
-    const el = wrapRef.current;
-    if (!el || window.innerWidth <= 760) { activeRef.current = i; setActive(i); return; }
-    const total = step() * labels.length;
-    const docTop = el.getBoundingClientRect().top + window.scrollY;
-    activeRef.current = i;
-    window.scrollTo({ top: docTop - SURFACE_TOP_PAD + (i + 0.5) / labels.length * total, behavior: "smooth" });
-  };
+  const tabOrder = [1, 0, 2];
+  const click = (i) => setActive(i);
 
   const webPanel = (
-    <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: C.paper, boxShadow: `0 16px 48px -22px ${C.ink}1A`, maxWidth: 640, width: "100%", display: "flex", flexDirection: "column", height: "100%" }}>
+    <div className="surface-web" style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: C.paper, boxShadow: `0 16px 48px -22px ${C.ink}1A`, width: 640, height: 460, display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "10px 16px", borderBottom: `1px solid ${C.soft}`, background: "#fafaf7", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontFamily: MONO, fontSize: 10.5, color: C.faint }}>paperplane</span>
         <span style={{ fontFamily: MONO, fontSize: 10.5, color: C.faint }}>Acme / Activity</span>
@@ -328,54 +285,46 @@ function SurfaceTabs() {
     </div>
   );
 
-  const panel = active === 0 ? webPanel : active === 1 ? slackPanel : termPanel;
+  const panels = [webPanel, slackPanel, termPanel];
+  const basePos = [
+    { left: "50%", right: "auto", transform: "translate(-50%,-50%)" },
+    { left: "0", right: "auto", transform: "translateY(-50%)" },
+    { left: "auto", right: "0", transform: "translateY(-50%)" },
+  ];
+  const zFor = (i) => {
+    if (i === active) return 3;
+    if (active === 0) return 1;
+    return i === 0 ? 2 : 1;
+  };
 
   return (
-    <div ref={wrapRef} className="surface-scroll-wrap" style={{ height: `${SURFACE_STEP_MAX * labels.length + 700}px`, position: "relative" }}>
-      <div ref={pinRef} className="surface-pin" style={{ position: "sticky", top: SURFACE_TOP_PAD }}>
-        <div style={eyebrow}>Where it lives</div>
-        <h2 style={h2s}>It comes to you. Not the other way around.</h2>
-        <p style={{ ...ps, maxWidth: 600, marginBottom: 28 }}>Paperplane doesn't need its own tab in your workflow. PRs show up in GitHub. Updates land in Slack. Queries run in your terminal. The dashboard exists, but you'll rarely need to open it.</p>
-        <div style={{ display: "flex", gap: 0, border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden", width: "max-content", marginBottom: 28 }} className="surface-tabs">
-          {labels.map((l, i) => (
-            <button key={l} onClick={() => click(i)} className="surface-tab" style={{ padding: "10px 22px", background: active === i ? C.ink : "none", border: "none", borderRight: i < 2 ? `1px solid ${C.border}` : "none", fontSize: 12, fontWeight: 500, color: active === i ? "#fff" : C.faint, fontFamily: MONO, letterSpacing: ".02em", cursor: "pointer", transition: "background .15s, color .15s" }}>{l}</button>
-          ))}
-        </div>
-        <div className="surface-inner" style={{ height: 460, display: "flex", alignItems: "flex-start" }}>
-          {panel}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── cycle diagram ── */
-function CycleDiagram() {
-  const CW = 300, CH = 230, GAP = 14;
-  const nodes = [
-    { label: "Watch", color: C.denim },
-    { label: "Diagnose", color: C.terra },
-    { label: "Verify", color: C.gold },
-    { label: "Fix", color: C.green },
-  ];
-  const arrows = [
-    { x: "50%", y: "25%", rotate: 0 },
-    { x: "75%", y: "50%", rotate: 90 },
-    { x: "50%", y: "75%", rotate: 180 },
-    { x: "25%", y: "50%", rotate: -90 },
-  ];
-  return (
-    <div className="cycle-diagram" style={{ position: "relative", width: CW, height: CH, justifySelf: "end" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: GAP, width: "100%", height: "100%" }}>
-        {nodes.map(n => (
-          <div key={n.label} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: shadow, fontFamily: MONO, fontSize: 12, fontWeight: 500, letterSpacing: ".02em", color: C.ink }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: n.color }} />{n.label}
-          </div>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+      <div style={eyebrow}>In your workflow</div>
+      <h2 style={h2s}>It meets you where you work.</h2>
+      <p style={{ ...ps, maxWidth: 820, marginBottom: 28 }}>Use Paperplane wherever your team already works. Tag it in Slack, pull it up in your terminal, or open the web app when you want the full picture. Whichever you choose, you can ask questions, hand it bugs, review fixes, or just let it run on autopilot.</p>
+      <div style={{ position: "relative", display: "flex", alignItems: "center", background: C.page, border: `1px solid ${C.border}`, borderRadius: 999, padding: 4, width: "max-content", marginBottom: 40, overflow: "hidden" }} className="surface-tabs">
+        <div style={{ position: "absolute", top: 4, bottom: 4, left: 4, width: `${100 / tabOrder.length}%`, borderRadius: 999, background: C.paper, transform: `translateX(${tabOrder.indexOf(active) * 100}%)`, transition: "transform .4s cubic-bezier(.22,1,.36,1)" }} />
+        {tabOrder.map(i => (
+          <button key={labels[i]} onClick={() => click(i)} className="surface-tab" style={{ position: "relative", zIndex: 1, width: 92, padding: "8px 0", borderRadius: 999, border: "none", background: "none", color: active === i ? C.ink : C.faint, fontSize: 13, fontWeight: 500, fontFamily: INTER, cursor: "pointer", transition: "color .2s" }}>{labels[i]}</button>
         ))}
       </div>
-      {arrows.map((a, i) => (
-        <span key={i} style={{ position: "absolute", left: a.x, top: a.y, transform: `translate(-50%,-50%) rotate(${a.rotate}deg)`, color: C.terra, fontSize: 16, lineHeight: 1, fontWeight: 600 }}>›</span>
-      ))}
+      <div className="surface-inner" style={{ position: "relative", width: "100%", height: 480, textAlign: "left" }}>
+        {panels.map((p, i) => {
+          const pos = basePos[i];
+          const isActive = i === active;
+          return (
+            <div
+              key={i}
+              className={isActive ? "surface-center" : "surface-peek"}
+              onClick={() => click(i)}
+              style={{ position: "absolute", top: "50%", left: pos.left, right: pos.right, transform: `${pos.transform} scale(${isActive ? 1 : .965})`, zIndex: zFor(i), cursor: isActive ? "default" : "pointer", transition: "transform .5s cubic-bezier(.22,1,.36,1)" }}
+            >
+              {p}
+            </div>
+          );
+        })}
+      </div>
+      <span style={{ marginTop: 20, fontFamily: MONO, fontSize: 10.5, color: C.faint, opacity: .6, letterSpacing: ".02em" }}>clickthrough the tabs to explore</span>
     </div>
   );
 }
@@ -583,7 +532,7 @@ function Home({ onNavigate }) {
         <F>
           <div style={{ maxWidth: 660 }}>
             <div style={eyebrow}>The difference</div>
-            <h2 style={h2s}>The same bug, two timelines.</h2>
+            <h2 style={h2s}>The same bug, two ways.</h2>
           </div>
         </F>
         <F delay={.06}>
@@ -630,14 +579,31 @@ function Home({ onNavigate }) {
     <section style={{ padding: pad, background: C.paper }}>
       <div style={wrap(IMG_W)}>
         <F>
-          <div className="cycle-wrap" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}>
+          <div className="problem-grid" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 60, alignItems: "center", overflow: "visible" }}>
             <div>
-              <div style={eyebrow}>The cycle</div>
-              <h2 style={h2s}>It never stops running.</h2>
-              <p style={{ ...ps, maxWidth: 490, margin: "20px 0 28px" }}>Most tools end at the insight. Paperplane closes the loop: after a fix ships, it watches the metric, logs the outcome, and feeds that result back into the next diagnosis. The cycle runs continuously, and each pass makes the next one sharper.</p>
-              <button onClick={() => onNavigate("404")} style={btnLaunch}>See how it learns ↗</button>
+              <div style={eyebrow}>Always on</div>
+              <h2 style={h2s}>Paperplane keeps running.<br />So does your product.</h2>
+              <p style={{ ...ps, maxWidth: 540, margin: "20px 0 0" }}>While your team sleeps, Paperplane keeps your product moving, catching problems, working through them, and getting fixes ready for review.</p>
             </div>
-            <CycleDiagram />
+            <F delay={.08} style={{ display: "flex", justifyContent: "flex-end" }}>
+              <div className="cycle-card" style={{ width: 360, maxWidth: "none", flexShrink: 0, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
+                <div style={{ padding: "10px 18px", background: "#fbfbf8", borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 11, color: C.faint }}>/paperplane</div>
+                <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
+                  {[
+                    { label: "watching", color: C.denim },
+                    { label: "working", color: C.gold },
+                    { label: "fix ready", color: C.terra },
+                  ].map((s, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14, color: C.ink }}>
+                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: s.color, flexShrink: 0 }} />{s.label}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ padding: "10px 18px", background: C.paper, borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 7, fontFamily: MONO, fontSize: 12, fontWeight: 600, color: C.green }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.green }} />running 24/7
+                </div>
+              </div>
+            </F>
           </div>
         </F>
       </div>
@@ -653,9 +619,9 @@ function Home({ onNavigate }) {
             <img src={I.cta} alt="" style={{ width: "100%", height: 320, objectFit: "cover", objectPosition: "center 45%", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: C.page, opacity: .74 }} />
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, padding: 24 }}>
-              <div style={{ background: C.page, border: `1px solid ${C.border}`, borderRadius: R, padding: "clamp(24px,3vw,30px) clamp(32px,5vw,56px)", textAlign: "center", maxWidth: 580, boxShadow: shadow }}>
-                <h2 style={{ ...h2s, marginBottom: 10 }}>See what your product can fix on its own</h2>
-                <p style={{ ...ps, fontSize: 15, marginBottom: 20 }}>Most teams get their first PR within a week.</p>
+              <div style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: R, padding: "clamp(24px,3vw,30px) clamp(32px,5vw,56px)", textAlign: "center", maxWidth: 580, boxShadow: shadow }}>
+                <h2 style={{ ...h2s, marginBottom: 10 }}>Put your product on autopilot.</h2>
+                <p style={{ ...ps, fontSize: 15, marginBottom: 20 }}>See what Paperplane finds in its first week.</p>
                 <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
                   <button onClick={() => onNavigate("404")} style={btnLaunch}>Launch</button>
                   <button onClick={() => onNavigate("404")} style={btnText}>Get a demo →</button>
@@ -693,17 +659,14 @@ export default function App() {
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
       *{margin:0;padding:0;box-sizing:border-box}img{max-width:100%}button{font-family:inherit}
       ::selection{background:${C.goldSoft};color:${C.ink}}
-      html{scroll-snap-type:y proximity}
-      .surface-scroll-wrap{scroll-snap-align:start}
-      @media(prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-snap-type:none}}
+      @media(prefers-reduced-motion:reduce){*{transition:none!important}}
       @media(max-width:960px){
         .problem-grid{grid-template-columns:1fr!important}
+        .cycle-card{width:100%!important;max-width:420px!important}
         .feature-grid{grid-template-columns:1fr!important}
         .feature-grid>div{grid-column:auto!important}
         .feature-wide{grid-template-columns:1fr!important;display:flex!important;flex-direction:column!important;min-height:auto!important;gap:30px!important}
         .bug-columns{grid-template-columns:1fr!important;gap:40px!important}
-        .cycle-wrap{grid-template-columns:1fr!important;text-align:center}
-        .cycle-diagram{justify-self:center!important;width:260px!important;height:260px!important}
         .product-body{grid-template-columns:96px 1fr!important}
         .sidebar{padding:12px 7px!important}
         .featured-insight{grid-template-columns:28px 1fr!important}
@@ -724,11 +687,11 @@ export default function App() {
         .insight-list-row{grid-template-columns:24px 74px 1fr!important}
         .insight-list-row>span:last-child{display:none}
         .feature-grid article{min-height:auto!important;padding:24px!important}
-        .surface-tabs{flex-wrap:wrap;width:100%!important}
-        .surface-tab{flex:1;text-align:center;padding:10px 12px!important}
-        .surface-inner{height:400px!important}
-        .surface-scroll-wrap{height:auto!important;scroll-snap-align:none!important}
-        .surface-pin{position:relative!important;top:auto!important;left:auto!important;width:auto!important}
+        .surface-tab{width:78px!important;padding:8px 0!important;font-size:12px!important}
+        .surface-inner{height:auto!important}
+        .surface-peek{display:none!important}
+        .surface-center{position:static!important;transform:none!important;margin:0 auto!important}
+        .surface-web{width:100%!important;height:auto!important}
       }
     `}</style>
     <Header onNavigate={navigate} />

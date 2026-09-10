@@ -70,10 +70,10 @@ function Header({ onNavigate }) {
   const close = useCallback(() => setOpen(null), []);
   useEffect(() => { const h = () => close(); window.addEventListener("click", h); return () => window.removeEventListener("click", h); }, [close]);
   useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
-  const openIdx = idx => { if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; } setOpen(idx); };
+  const enterIdx = (item, idx) => { if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; } setOpen(item.link ? null : idx); };
   const scheduleClose = () => { closeTimer.current = setTimeout(() => setOpen(null), 150); };
   const NL = ({ mobile }) => (<div style={mobile ? { display: "flex", flexDirection: "column", gap: 2 } : { display: "flex", alignItems: "center" }}>
-    {NAV_ITEMS.map((item, idx) => (<div key={idx} style={{ position: "relative" }} {...(!mobile ? { onMouseEnter: () => !item.link && openIdx(idx), onMouseLeave: scheduleClose } : {})}>
+    {NAV_ITEMS.map((item, idx) => (<div key={idx} style={{ position: "relative" }} {...(!mobile ? { onMouseEnter: () => enterIdx(item, idx), onMouseLeave: scheduleClose } : {})}>
       <button onClick={e => { e.stopPropagation(); if (item.link) { onNavigate("404"); setMob(false); } else setOpen(open === idx ? null : idx); }} style={{ background: "none", border: "none", padding: mobile ? "10px 0" : "6px 12px", fontSize: 14, fontWeight: 500, cursor: "pointer", color: open === idx ? C.ink : C.body, fontFamily: INTER, display: "flex", alignItems: "center", gap: 4, width: mobile ? "100%" : "auto", ...(open === idx && !mobile ? { background: C.soft } : {}) }}>
         {item.label}{!item.link && <svg width={10} height={10} viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ transform: open === idx ? "rotate(180deg)" : "none", transition: "transform .2s" }}><path d="M2.5 4L5 6.5L7.5 4" /></svg>}
       </button>

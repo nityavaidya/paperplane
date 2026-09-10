@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import heroImg from "./paperplane-assets/hero.png";
-import ctaImg from "./paperplane-assets/cta.png";
+import { preload } from "react-dom";
+import heroImg from "./paperplane-assets/hero.jpg";
+import ctaImg from "./paperplane-assets/cta.jpg";
 import textureBlue from "./paperplane-assets/texture-blue.png";
 import faviconIco from "./paperplane-assets/favicon.ico";
 import faviconSvg from "./paperplane-assets/favicon.svg";
 import appleTouchIcon from "./paperplane-assets/apple-touch-icon.png";
+
+preload(heroImg, { as: "image", fetchPriority: "high" });
 
 const I = { hero: heroImg, blue: textureBlue, cta: ctaImg };
 const INTER = "'Inter',system-ui,sans-serif";
@@ -106,17 +109,17 @@ function Footer({ onNavigate }) {
 function HeroDashboard() {
   const sideItems = ["Overview", "Signals", "Journeys", "Users", "Reports"];
   return (
-    <div style={{ width: "100%", maxWidth: 920, background: C.paper, border: `1px solid ${C.border}`, borderRadius: R, overflow: "hidden", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
+    <div className="hero-dashboard" style={{ width: "100%", maxWidth: 920, background: C.paper, border: `1px solid ${C.border}`, borderRadius: R, overflow: "hidden", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
       <div style={{ height: 49, display: "flex", alignItems: "center", padding: "0 17px", borderBottom: `1px solid ${C.soft}`, background: "#fafaf7" }}>
         <div style={{ display: "flex", gap: 6, width: 90 }}>
-          {["#f49378", "#d5d5ce", "#d5d5ce"].map((bg, i) => <span key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: bg }} />)}
+          {[C.terra, "#d5d5ce", "#d5d5ce"].map((bg, i) => <span key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: bg }} />)}
         </div>
         <div style={{ margin: "0 auto", width: 260, height: 24, padding: "5px 14px", border: `1px solid ${C.border}`, borderRadius: 7, fontSize: 10, color: "#777", background: "#fff", fontFamily: MONO, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 7 }}>
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ opacity: .5, flexShrink: 0 }}><circle cx="7" cy="7" r="5.5" stroke="#777" strokeWidth="1.4" /><line x1="11.2" y1="11.2" x2="15" y2="15" stroke="#777" strokeWidth="1.4" strokeLinecap="round" /></svg>
           <span style={{ opacity: .6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Ask anything about your product...</span>
         </div>
         <div style={{ width: 90, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, fontSize: 10, color: C.green, fontFamily: MONO }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#42b789" }} />Live
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.green }} />Live
         </div>
       </div>
       <div className="product-body" style={{ minHeight: 520, display: "grid", gridTemplateColumns: "130px 1fr" }}>
@@ -172,7 +175,7 @@ function HeroDashboard() {
                   <div><strong style={{ display: "block", fontSize: 12 }}>2 days</strong><small style={{ display: "block", marginTop: 1, color: "#aaa", fontSize: 8 }}>signal to merged PR</small></div>
                 </div>
               </div>
-              <div className="recommendation" style={{ padding: 13, alignSelf: "stretch", background: "#f7f7f3", borderRadius: 8 }}>
+              <div className="recommendation" style={{ padding: 13, alignSelf: "stretch", background: C.page, borderRadius: 8 }}>
                 <span style={{ display: "block", marginBottom: 5, color: C.faint, letterSpacing: ".12em", fontSize: 9, fontWeight: 600, fontFamily: MONO }}>NEXT UP</span>
                 <p style={{ margin: "10px 0 12px", fontSize: 11, lineHeight: 1.45, fontWeight: 600, letterSpacing: "-.01em" }}>Teams that invite a second user in week one retain 2.1× better. PR ready to nudge the invite flow.</p>
                 <div style={{ width: "100%", height: 28, display: "flex", alignItems: "center", justifyContent: "space-between", border: `1px solid ${C.border}`, background: "white", borderRadius: 6, padding: "0 9px", color: C.body, fontSize: 9, cursor: "pointer" }}><span>View PR draft</span><span>→</span></div>
@@ -203,12 +206,21 @@ function SurfaceTabs() {
   const labels = ["Web", "Slack", "Terminal"];
   const tabOrder = [1, 0, 2];
   const click = (i) => setActive(i);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setActive(0);
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
 
   const webPanel = (
     <div className="surface-web" style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: C.paper, boxShadow: `0 16px 48px -22px ${C.ink}1A`, width: 640, height: 460, display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "10px 16px", borderBottom: `1px solid ${C.soft}`, background: "#fafaf7", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ padding: "10px 16px", borderBottom: `1px solid ${C.soft}`, background: "#FDFDFB", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontFamily: MONO, fontSize: 10.5, color: C.faint }}>paperplane</span>
-        <span style={{ fontFamily: MONO, fontSize: 10.5, color: C.faint }}>Acme / Activity</span>
+        <span style={{ fontFamily: MONO, fontSize: 10.5, color: C.faint }}>/ Launchpad</span>
       </div>
       <div style={{ padding: "6px 0", flex: 1, overflow: "hidden" }}>
         {[
@@ -218,8 +230,8 @@ function SurfaceTabs() {
           { time: "Monday, 9:48 AM", dot: C.gold, label: "PR ready", lc: "#8a6a1f", lb: C.goldSoft, bold: "PR #267 opened.", rest: " Fix for 3s API timeout on slow connections. 312 affected sessions attached.", meta: "est. impact: +6-9%" },
           { time: "Monday, 9:31 AM", dot: C.terra, label: "High impact", lc: "#8d4a3d", lb: C.terraSoft, bold: "Signal detected:", rest: " checkout completion dropped 8%. Root cause traced to API timeout on mobile.", meta: "312 users" },
         ].map((item, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "110px 10px 1fr", gap: 12, alignItems: "start", padding: "14px 20px", borderBottom: i < 4 ? `1px solid ${C.soft}` : "none" }}>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: C.faint, paddingTop: 3, textAlign: "right" }}>{item.time}</div>
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "128px 10px 1fr", gap: 12, alignItems: "start", padding: "14px 20px", borderBottom: i < 4 ? `1px solid ${C.soft}` : "none" }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: C.faint, paddingTop: 3, textAlign: "right", whiteSpace: "nowrap" }}>{item.time}</div>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: item.dot, marginTop: 6 }} />
             <div style={{ fontSize: 12.5, lineHeight: 1.5, color: C.body }}>
               <strong style={{ color: C.ink }}>{item.bold}</strong>{item.rest}
@@ -238,19 +250,19 @@ function SurfaceTabs() {
       <div style={{ padding: "12px 20px", borderBottom: `1px solid ${C.soft}`, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}># product-signals <span style={{ color: C.faint, fontWeight: 400, fontSize: 11 }}>3 new messages</span></div>
       <div style={{ padding: "16px 20px" }}>
         {[
-          { msg: <><strong>Fix verified:</strong> Safari autofill fix (PR #238) deployed 3 days ago. Signup completion is up 4.1%. holding steady across all segments.</>,
-            embed: <><strong>Verification report</strong><br />Metric: signup completion 87.2% → 91.3%<br />Affected sessions: 847 → 0<br />Confidence: causal (controlled rollout)<br />Status: logged to memory</>,
+          { msg: <><strong>Fix update:</strong> Safari autofill fix (PR #238) deployed 3 days ago. Signup completion is up 4.1%. Holding steady across all segments.</>,
+            embed: <><strong>Monitoring report</strong><br />Metric: signup completion 87.2% → 91.3%<br />Affected sessions: 847 → 0<br />Confidence: causal (controlled rollout)<br />Status: stable</>,
             reactions: ["🎉 4", "👀 2"], time: "10:42 AM" },
           { msg: <><strong>New signal:</strong> Teams that invite a second user in week one retain 2.1× better. This pattern is strong across all customer segments. I've drafted a PR to surface the invite prompt earlier. want me to open it?</>,
             reactions: ["👍 3"], time: "10:43 AM" },
         ].map((row, i) => (
           <div key={i} style={{ display: "grid", gridTemplateColumns: "32px 1fr", gap: 10, marginBottom: i === 0 ? 16 : 0 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 7, display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700, fontFamily: MONO, background: C.denimSoft, color: C.denim }}>P</div>
+            <div style={{ width: 32, height: 32, borderRadius: 7, display: "grid", placeItems: "center", background: C.denimSoft }}><Logo size={16} color={C.denim} /></div>
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Paperplane <small style={{ fontWeight: 400, color: C.faint, fontSize: 10, marginLeft: 6 }}>{row.time}</small></div>
               <div style={{ fontSize: 13, lineHeight: 1.55, color: C.body }}>{row.msg}</div>
-              {row.embed && <div style={{ marginTop: 8, padding: "10px 14px", borderLeft: `3px solid ${C.denim}`, background: "#f7f8f5", borderRadius: "0 6px 6px 0", fontSize: 11.5, lineHeight: 1.5, color: C.body }}>{row.embed}</div>}
-              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>{row.reactions.map((r, ri) => <span key={ri} style={{ padding: "3px 8px", background: C.soft, border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 11 }}>{r}</span>)}</div>
+              {row.embed && <div style={{ marginTop: 8, padding: "10px 14px", borderLeft: `3px solid ${C.denim}`, background: "#FDFDFB", borderRadius: "0 6px 6px 0", fontSize: 11.5, lineHeight: 1.5, color: C.body }}>{row.embed}</div>}
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>{row.reactions.map((r, ri) => <span key={ri} style={{ padding: "3px 8px", background: C.page, border: `1px solid ${C.border}`, borderRadius: 999, fontSize: 11 }}>{r}</span>)}</div>
             </div>
           </div>
         ))}
@@ -261,7 +273,7 @@ function SurfaceTabs() {
   const termPanel = (
     <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#1a1d1c", boxShadow: `0 16px 48px -22px ${C.ink}1A`, maxWidth: 700 }}>
       <div style={{ height: 38, display: "flex", alignItems: "center", padding: "0 14px", gap: 6, background: "#222524" }}>
-        {["#f49378", "#3a3d3b", "#3a3d3b"].map((bg, i) => <span key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: bg }} />)}
+        {[C.terra, "#3a3d3b", "#3a3d3b"].map((bg, i) => <span key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: bg }} />)}
       </div>
       <div style={{ padding: "16px 18px", fontFamily: MONO, fontSize: 11.5, lineHeight: 1.7, color: "#a8aba6" }}>
         <div><span style={{ color: C.denim }}>~</span> <span style={{ color: "#e0e2dd" }}>paperplane ask "what changed in onboarding this quarter?"</span></div>
@@ -279,17 +291,17 @@ function SurfaceTabs() {
         <div>&nbsp;</div>
         <div><span style={{ color: "#555" }}>sources: 1,842 sessions · experiment 14 · releases 2.1, 2.3</span></div>
         <div>&nbsp;</div>
-        <div><span style={{ color: C.denim }}>~</span> <span style={{ color: "#e0e2dd" }}>paperplane assign PR#256 @sarah --priority high</span></div>
-        <div><span style={{ color: "#7dba8f" }}>✓</span> Assigned to @sarah · notification sent to #product-signals</div>
+        <div><span style={{ color: C.denim }}>~</span> <span style={{ color: "#e0e2dd" }}>paperplane watch PR#256 --owner @sarah</span></div>
+        <div><span style={{ color: "#7dba8f" }}>✓</span> @sarah will be notified if the metric regresses</div>
       </div>
     </div>
   );
 
   const panels = [webPanel, slackPanel, termPanel];
   const basePos = [
-    { left: "50%", right: "auto", transform: "translate(-50%,-50%)" },
-    { left: "0", right: "auto", transform: "translateY(-50%)" },
-    { left: "auto", right: "0", transform: "translateY(-50%)" },
+    { left: "50%", right: "auto", transform: "translate(-50%,-50%)", origin: "center" },
+    { left: "0", right: "auto", transform: "translateY(-50%)", origin: "left center" },
+    { left: "auto", right: "0", transform: "translateY(-50%)", origin: "right center" },
   ];
   const zFor = (i) => {
     if (i === active) return 3;
@@ -301,28 +313,32 @@ function SurfaceTabs() {
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
       <div style={eyebrow}>In your workflow</div>
       <h2 style={h2s}>It meets you where you work.</h2>
-      <p style={{ ...ps, maxWidth: 820, marginBottom: 28 }}>Use Paperplane wherever your team already works. Tag it in Slack, pull it up in your terminal, or open the web app when you want the full picture. Whichever you choose, you can ask questions, hand it bugs, review fixes, or just let it run on autopilot.</p>
-      <div style={{ position: "relative", display: "flex", alignItems: "center", background: C.page, border: `1px solid ${C.border}`, borderRadius: 999, padding: 4, width: "max-content", marginBottom: 40, overflow: "hidden" }} className="surface-tabs">
-        <div style={{ position: "absolute", top: 4, bottom: 4, left: 4, width: `${100 / tabOrder.length}%`, borderRadius: 999, background: C.paper, transform: `translateX(${tabOrder.indexOf(active) * 100}%)`, transition: "transform .4s cubic-bezier(.22,1,.36,1)" }} />
-        {tabOrder.map(i => (
-          <button key={labels[i]} onClick={() => click(i)} className="surface-tab" style={{ position: "relative", zIndex: 1, width: 92, padding: "8px 0", borderRadius: 999, border: "none", background: "none", color: active === i ? C.ink : C.faint, fontSize: 13, fontWeight: 500, fontFamily: INTER, cursor: "pointer", transition: "color .2s" }}>{labels[i]}</button>
-        ))}
-      </div>
-      <div className="surface-inner" style={{ position: "relative", width: "100%", height: 480, textAlign: "left" }}>
-        {panels.map((p, i) => {
-          const pos = basePos[i];
-          const isActive = i === active;
-          return (
-            <div
-              key={i}
-              className={isActive ? "surface-center" : "surface-peek"}
-              onClick={() => click(i)}
-              style={{ position: "absolute", top: "50%", left: pos.left, right: pos.right, transform: `${pos.transform} scale(${isActive ? 1 : .965})`, zIndex: zFor(i), cursor: isActive ? "default" : "pointer", transition: "transform .5s cubic-bezier(.22,1,.36,1)" }}
-            >
-              {p}
-            </div>
-          );
-        })}
+      <p style={{ ...ps, maxWidth: 820, marginBottom: 32 }}>Use Paperplane wherever your team already works. Tag it in Slack, pull it up in your terminal, or open the web app when you want the full picture. Whichever you choose, you can ask questions, hand it bugs, review fixes, or just let it run on autopilot.</p>
+      <div ref={wrapRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", background: C.page, border: `1px solid ${C.border}`, borderRadius: 999, padding: 4, width: "max-content", marginBottom: 16, overflow: "hidden" }} className="surface-tabs">
+          <div style={{ position: "relative", display: "flex" }}>
+            <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${100 / tabOrder.length}%`, borderRadius: 999, background: C.paper, transform: `translateX(${tabOrder.indexOf(active) * 100}%)`, transition: "transform .4s cubic-bezier(.22,1,.36,1)" }} />
+            {tabOrder.map(i => (
+              <button key={labels[i]} onClick={() => click(i)} className="surface-tab" style={{ position: "relative", zIndex: 1, width: 92, padding: "8px 0", borderRadius: 999, border: "none", background: "none", color: active === i ? C.ink : C.faint, fontSize: 13, fontWeight: 500, fontFamily: INTER, textAlign: "center", cursor: "pointer", transition: "color .2s" }}>{labels[i]}</button>
+            ))}
+          </div>
+        </div>
+        <div className="surface-inner" style={{ position: "relative", width: "100%", height: 480, textAlign: "left" }}>
+          {panels.map((p, i) => {
+            const pos = basePos[i];
+            const isActive = i === active;
+            return (
+              <div
+                key={i}
+                className={isActive ? "surface-center" : "surface-peek"}
+                onClick={() => click(i)}
+                style={{ position: "absolute", top: "50%", left: pos.left, right: pos.right, transform: `${pos.transform} scale(${isActive ? 1 : .965})`, transformOrigin: pos.origin, zIndex: zFor(i), cursor: isActive ? "default" : "pointer", transition: "transform .5s cubic-bezier(.22,1,.36,1)" }}
+              >
+                {p}
+              </div>
+            );
+          })}
+        </div>
       </div>
       <span style={{ marginTop: 20, fontFamily: MONO, fontSize: 10.5, color: C.faint, opacity: .6, letterSpacing: ".02em" }}>clickthrough the tabs to explore</span>
     </div>
@@ -365,9 +381,9 @@ function Home({ onNavigate }) {
       <div style={{ padding: "clamp(20px,3vw,26px) 0 clamp(60px,8.5vw,100px)" }}>
         <div style={wrap(IMG_W)}>
           <div style={{ position: "relative", overflow: "hidden", border: `1px solid ${C.border}`, background: C.page }}>
-            <img src={I.hero} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 42%", display: "block" }} />
+            <img src={I.hero} alt="" fetchPriority="high" decoding="async" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 42%", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: C.page, opacity: .74 }} />
-            <div style={{ position: "relative", zIndex: 2, display: "flex", justifyContent: "center", padding: "clamp(16px,3vw,30px) clamp(16px,4vw,50px)" }}>
+            <div className="dashboard-scroll" style={{ position: "relative", zIndex: 2, display: "flex", justifyContent: "center", padding: "clamp(16px,3vw,30px) clamp(16px,4vw,50px)" }}>
               <F><HeroDashboard /></F>
             </div>
           </div>
@@ -430,7 +446,7 @@ function Home({ onNavigate }) {
               ))}
             </div>
             <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
-              <div style={{ height: 46, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: "#f8f8f5", borderBottom: `1px solid ${C.border}`, fontSize: 12, fontWeight: 600 }}>
+              <div style={{ height: 46, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: "#FDFDFB", borderBottom: `1px solid ${C.border}`, fontSize: 12, fontWeight: 600 }}>
                 <span>Emerging signals</span><small style={{ color: C.faint, fontWeight: 400, fontSize: 10 }}>Updated 4 min ago</small>
               </div>
               {[
@@ -439,7 +455,7 @@ function Home({ onNavigate }) {
                 { icon: "!", text: "Safari autofill silently breaking email field", sub: "41 sessions · 18 accounts · PR drafted", pri: "Fix ready", iconColor: C.terra },
               ].map((s, i) => (
                 <div key={i} style={{ minHeight: 68, display: "grid", gridTemplateColumns: "30px 1fr 34px", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: i < 2 ? `1px solid ${C.soft}` : "none", ...(s.active ? { background: C.terraSoft } : {}) }}>
-                  <div style={{ width: 28, height: 28, display: "grid", placeItems: "center", borderRadius: 7, background: C.soft, color: s.iconColor, fontSize: 12, fontWeight: 600 }}>{s.icon}</div>
+                  <div style={{ width: 28, height: 28, display: "grid", placeItems: "center", color: s.iconColor, fontSize: 12, fontWeight: 600 }}>{s.icon}</div>
                   <div><strong style={{ display: "block", fontSize: 11 }}>{s.text}</strong><small style={{ display: "block", marginTop: 4, color: C.faint, fontSize: 9 }}>{s.sub}</small></div>
                   <span style={{ fontSize: 9, fontFamily: MONO, color: C.faint }}>{s.pri}</span>
                 </div>
@@ -455,7 +471,7 @@ function Home({ onNavigate }) {
               <p style={{ fontSize: 15, lineHeight: 1.68, color: C.body }}>When Paperplane finds something worth fixing, it traces the problem down to the lines of code, writes the change, and opens a PR with the full evidence chain attached. Your team reviews it like any other pull request.</p>
             </div>
             <div style={{ flex: 1, display: "flex", alignItems: "center", marginTop: 28 }}>
-              <div style={{ width: "100%", border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#fbfbf8", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
+              <div style={{ width: "100%", border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", background: "#FDFDFB", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
                 <div style={{ padding: "11px 14px", borderBottom: `1px solid ${C.soft}`, display: "flex", justifyContent: "space-between", fontSize: 11, fontFamily: MONO }}>
                   <span>paperplane/fix-safari-autofill</span><span style={{ color: C.green, fontWeight: 600 }}>● ready</span>
                 </div>
@@ -479,7 +495,7 @@ function Home({ onNavigate }) {
               <h3 style={{ fontSize: "clamp(22px,2.8vw,28px)", lineHeight: 1.12, letterSpacing: "-.035em", margin: "12px 0 14px", fontWeight: 600 }}>It checks its own work.</h3>
               <p style={{ fontSize: 15, lineHeight: 1.68, color: C.body }}>After a fix is deployed, Paperplane tracks the metric to verify the result. Verified fixes get logged to memory, while unresolved issues reopen the ticket.</p>
             </div>
-            <div style={{ marginTop: 28, padding: 20, border: `1px solid ${C.border}`, borderRadius: 12, background: "#f9fbf8", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
+            <div style={{ marginTop: 28, padding: 20, border: `1px solid ${C.border}`, borderRadius: 12, background: "#FDFDFB", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={pill("#2d5e3f", "#e8f2ec")}>Verified</span>
                 <span style={{ color: C.faint, fontSize: 9, fontFamily: MONO }}>3 days post-deploy</span>
@@ -503,7 +519,7 @@ function Home({ onNavigate }) {
                 <div key={i} style={{ fontSize: 13.5, color: C.body, margin: "10px 0", display: "flex", gap: 6 }}><span style={{ color: C.denim, flexShrink: 0 }}>↳</span>{t}</div>
               ))}
             </div>
-            <div style={{ border: `1px solid ${C.border}`, background: "#fbfbf8", borderRadius: 12, padding: 20, boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
+            <div style={{ border: `1px solid ${C.border}`, background: "#FDFDFB", borderRadius: 12, padding: 20, boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
               <span style={{ display: "block", marginBottom: 5, color: C.faint, letterSpacing: ".12em", fontSize: 9, fontWeight: 600, fontFamily: MONO }}>ASK PAPERPLANE</span>
               <div style={{ border: `1px solid ${C.border}`, background: "white", borderRadius: 8, padding: "11px 13px", fontSize: 12.5 }}>What changed in onboarding this quarter?</div>
               <div style={{ marginTop: 14, fontSize: 13, lineHeight: 1.55, color: C.body }}><strong style={{ color: C.ink }}>Two fixes shipped, both verified.</strong> The documentation handoff was replaced with an in-product walkthrough (PR #241, March 14). Setup completion went from 58% to 73%. The invite nudge (PR #256, April 2) hasn't been verified yet. still monitoring.</div>
@@ -516,7 +532,7 @@ function Home({ onNavigate }) {
                 ))}
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 14 }}>
-                {["PR #241", "PR #256", "1,842 sessions", "experiment 14"].map(s => <span key={s} style={{ fontFamily: MONO, fontSize: 9.5, background: C.soft, border: `1px solid ${C.border}`, padding: "4px 7px", borderRadius: 4, color: C.faint }}>{s}</span>)}
+                {["PR #241", "PR #256", "1,842 sessions", "experiment 14"].map(s => <span key={s} style={{ fontFamily: MONO, fontSize: 9.5, background: C.page, border: `1px solid ${C.border}`, padding: "4px 7px", borderRadius: 4, color: C.faint }}>{s}</span>)}
               </div>
             </div>
           </article></F>
@@ -587,7 +603,7 @@ function Home({ onNavigate }) {
             </div>
             <F delay={.08} style={{ display: "flex", justifyContent: "flex-end" }}>
               <div className="cycle-card" style={{ width: 360, maxWidth: "none", flexShrink: 0, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
-                <div style={{ padding: "10px 18px", background: "#fbfbf8", borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 11, color: C.faint }}>/paperplane</div>
+                <div style={{ padding: "10px 18px", background: "#FDFDFB", borderBottom: `1px solid ${C.border}`, fontFamily: MONO, fontSize: 11, color: C.faint }}>/ paperplane</div>
                 <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
                   {[
                     { label: "watching", color: C.denim },
@@ -616,7 +632,7 @@ function Home({ onNavigate }) {
       <div style={wrap(IMG_W)}>
         <F>
           <div style={{ position: "relative", overflow: "hidden", border: `1px solid ${C.border}`, background: C.page }}>
-            <img src={I.cta} alt="" style={{ width: "100%", height: 320, objectFit: "cover", objectPosition: "center 45%", display: "block" }} />
+            <img src={I.cta} alt="" loading="lazy" decoding="async" style={{ width: "100%", height: 320, objectFit: "cover", objectPosition: "center 45%", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: C.page, opacity: .74 }} />
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, padding: 24 }}>
               <div style={{ background: C.paper, border: `1px solid ${C.border}`, borderRadius: R, padding: "clamp(24px,3vw,30px) clamp(32px,5vw,56px)", textAlign: "center", maxWidth: 580, boxShadow: shadow }}>
@@ -676,16 +692,8 @@ export default function App() {
         .desktop-nav{display:none!important}
         .desktop-btn{display:none!important}
         .mobile-menu-btn{display:flex!important}
-        .product-body{grid-template-columns:1fr!important;min-height:auto!important}
-        .sidebar{display:none!important}
-        .dashboard-main{padding:16px 14px!important}
-        .summary-grid{grid-template-columns:1fr 1fr!important}
-        .summary-grid>div:last-child{display:none}
-        .featured-insight{grid-template-columns:1fr!important;padding:14px!important}
-        .featured-insight>div:first-child{display:none}
-        .recommendation{grid-column:auto}
-        .insight-list-row{grid-template-columns:24px 74px 1fr!important}
-        .insight-list-row>span:last-child{display:none}
+        .dashboard-scroll{overflow-x:auto!important;justify-content:flex-start!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-x!important}
+        .hero-dashboard{width:920px!important;max-width:none!important;flex-shrink:0!important}
         .feature-grid article{min-height:auto!important;padding:24px!important}
         .surface-tab{width:78px!important;padding:8px 0!important;font-size:12px!important}
         .surface-inner{height:auto!important}

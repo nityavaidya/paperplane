@@ -166,7 +166,7 @@ function HeroDashboard() {
               <div style={{ width: 28, height: 28, display: "grid", placeItems: "center", background: C.ink, color: "#fff", borderRadius: 7, fontSize: 10, fontFamily: MONO }}>01</div>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.faint, fontSize: 9 }}>
-                  <span style={pill("#2d5e3f", "#e8f2ec")}>Shipped · verified</span>
+                  <span style={pill("#2d5e3f", "#e8f2ec")}>Shipped · Verified</span>
                   <span>Onboarding · 312 users affected</span>
                 </div>
                 <h4 style={{ margin: "8px 0 6px", fontSize: 14, lineHeight: 1.35, letterSpacing: "-.02em", fontWeight: 600 }}>Users were leaving when asked to configure their first data source.</h4>
@@ -502,10 +502,10 @@ function Home({ onNavigate }) {
             <div style={{ marginTop: 28, padding: 20, border: `1px solid ${C.border}`, borderRadius: 12, background: "#FDFDFB", boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={pill("#2d5e3f", "#e8f2ec")}>Verified</span>
-                <span style={{ color: C.faint, fontSize: 9, fontFamily: MONO }}>3 days post-deploy</span>
+                <span style={{ color: C.faint, fontSize: 9, fontFamily: MONO }}>60 days post-deploy</span>
               </div>
               <h4 style={{ margin: "16px 0 20px", fontSize: 16, lineHeight: 1.4, letterSpacing: "-.02em", fontWeight: 600 }}>Safari autofill fix / email field</h4>
-              {[["Signup completion", "+4.1%", C.green], ["Affected sessions", "847 → 0", null], ["Status", "Logged to memory", C.green]].map(([k, v, color], i) => (
+              {[["Signup completion", "+4.1% · holding", C.green], ["Affected sessions", "847 → 0", null], ["Status", "Logged to memory", C.green]].map(([k, v, color], i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 0", borderTop: `1px solid #e5e8e1`, ...(i === 2 ? { borderBottom: "none" } : { borderBottom: i === 1 ? `1px solid #e5e8e1` : "none" }), fontSize: 11 }}>
                   <span>{k}</span><strong style={color ? { color } : {}}>{v}</strong>
                 </div>

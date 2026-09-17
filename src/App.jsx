@@ -186,8 +186,8 @@ function HeroDashboard() {
               </div>
             </div>
             <div style={{ borderTop: `1px solid ${C.soft}` }}>
-              {[{ idx: "02", tl: "PR ready", tc: "#8d4a3d", tb: C.terraSoft, text: "Mobile users repeatedly miss the export action. layout fix drafted." },
-                { idx: "03", tl: "Monitoring", tc: C.denim, tb: C.denimSoft, text: "Safari autofill fix from last week holding. signup +4.1%." }
+              {[{ idx: "02", tl: "PR ready", tc: "#8d4a3d", tb: C.terraSoft, text: "Mobile users repeatedly miss the export action. Layout fix drafted." },
+                { idx: "03", tl: "Monitoring", tc: C.denim, tb: C.denimSoft, text: "Safari autofill fix from last week holding. Signup +4.1%." }
               ].map((row, i) => (
                 <div key={i} className="insight-list-row" style={{ display: "grid", gridTemplateColumns: "28px 78px 1fr 18px", alignItems: "center", gap: 8, minHeight: 42, padding: "0 18px", borderBottom: i === 0 ? `1px solid ${C.soft}` : "none", fontSize: 10 }}>
                   <span style={{ color: "#aaa", fontFamily: MONO, fontSize: 9 }}>{row.idx}</span>
@@ -257,7 +257,7 @@ function SurfaceTabs() {
           { msg: <><strong>Fix update:</strong> Safari autofill fix (PR #238) deployed 3 days ago. Signup completion is up 4.1%. Holding steady across all segments.</>,
             embed: <><strong>Monitoring report</strong><br />Metric: signup completion 87.2% → 91.3%<br />Affected sessions: 847 → 0<br />Confidence: causal (controlled rollout)<br />Status: stable</>,
             reactions: ["🎉 4", "👀 2"], time: "10:42 AM" },
-          { msg: <><strong>New signal:</strong> Teams that invite a second user in week one retain 2.1× better. This pattern is strong across all customer segments. I've drafted a PR to surface the invite prompt earlier. want me to open it?</>,
+          { msg: <><strong>New signal:</strong> Teams that invite a second user in week one retain 2.1× better. This pattern is strong across all customer segments. I've drafted a PR to surface the invite prompt earlier. Want me to open it?</>,
             reactions: ["👍 3"], time: "10:43 AM" },
         ].map((row, i) => (
           <div key={i} style={{ display: "grid", gridTemplateColumns: "32px 1fr", gap: 10, marginBottom: i === 0 ? 16 : 0 }}>
@@ -526,7 +526,7 @@ function Home({ onNavigate }) {
             <div style={{ border: `1px solid ${C.border}`, background: "#FDFDFB", borderRadius: 12, padding: 20, boxShadow: `0 16px 48px -22px ${C.ink}1A` }}>
               <span style={{ display: "block", marginBottom: 5, color: C.faint, letterSpacing: ".12em", fontSize: 9, fontWeight: 600, fontFamily: MONO }}>ASK PAPERPLANE</span>
               <div style={{ border: `1px solid ${C.border}`, background: "white", borderRadius: 8, padding: "11px 13px", fontSize: 12.5 }}>What changed in onboarding this quarter?</div>
-              <div style={{ marginTop: 14, fontSize: 13, lineHeight: 1.55, color: C.body }}><strong style={{ color: C.ink }}>Two fixes shipped, both verified.</strong> The documentation handoff was replaced with an in-product walkthrough (PR #241, March 14). Setup completion went from 58% to 73%. The invite nudge (PR #256, April 2) hasn't been verified yet. still monitoring.</div>
+              <div style={{ marginTop: 14, fontSize: 13, lineHeight: 1.55, color: C.body }}><strong style={{ color: C.ink }}>Two fixes shipped, both verified.</strong> The documentation handoff was replaced with an in-product walkthrough (PR #241, March 14). Setup completion went from 58% to 73%. The invite nudge (PR #256, April 2) hasn't been verified yet. Still monitoring.</div>
               <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
                 {[["58% → 73%", "Setup completion"], ["4.2 minutes", "Time to first value dropped by"], ["60 days", "Effect still holding after"]].map(([bold, text], i) => (
                   <div key={i} style={{ display: "flex", gap: 9, fontSize: 11.5, color: C.body }}>
@@ -614,7 +614,7 @@ function Home({ onNavigate }) {
                     { label: "working", color: C.gold },
                     { label: "fix ready", color: C.terra },
                   ].map((s, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14, color: C.ink }}>
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: C.ink }}>
                       <span style={{ width: 7, height: 7, borderRadius: "50%", background: s.color, flexShrink: 0 }} />{s.label}
                     </div>
                   ))}
